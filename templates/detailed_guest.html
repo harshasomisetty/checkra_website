@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Podcast{% endblock %}
+
+
+
+{% block content %}
+
+{{topic_plot}}
+<!-- add slider to adjust summary length -->
+<!--  -->
+<br>
+{%for topic in summaries%}
+<p>{{loop.index}} {{" ".join(topic)}}</p>
+{%endfor%}
+
+{% endblock %}

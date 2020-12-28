@@ -1,0 +1,39 @@
+
+body{
+    color:#155811;
+    margin: 0 auto;
+    width: 100%;
+    padding: 20px;
+}
+
+.navbar-brand {
+    font-size: 30px !important;
+}
+
+.podcast-guest-grid {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto;
+    padding: 10px;
+}
+
+.grid-container {
+    display:grid;
+    grid-template-columns: auto auto auto auto auto auto auto;
+    padding:5px
+}
+
+.home-buttons{
+    display: flex;
+    justify-content: space-between;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 10px 0;
+}
+.grid-item {
+    padding: 20px;
+    text-align: center;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}

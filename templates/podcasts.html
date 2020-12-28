@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Login Page{% endblock %}
+
+{% block content %}
+    <h6>Enter any name from the below options to explore their podcasts</h6>
+    <small>*Currently only supporting podcasts with Lex Fridman*</small>
+
+    <form action="#" method = "post" style="padding-top: 20px;">
+        <p style="display:inline-block;"><input type="text" placeholder="Search Podcast by Guest" name="nm"/></p>
+        <p style="display:inline-block;"><input type="submit" class="btn btn-outline-dark" value="search"/></p>
+    </form>
+
+    <div class="podcast-guest-grid">
+        {%for i in guests%}
+            <div class="grid-item">{{i}}</div>
+        {% endfor %}
+    </div>
+{% endblock %}
