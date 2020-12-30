@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import math
-from graphy import graphy
+from podcasts.graphy import graphy
 
 matplotlib.use("agg")
 client = pymongo.MongoClient("mongodb+srv://***REMOVED***:"+urllib.parse.quote("***REMOVED***")+"@cluster0.4pec2.mongodb.net/Checkra?retryWrites=true&w=majority")
