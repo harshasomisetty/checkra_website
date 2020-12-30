@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import math
+from graphy import graphy
+
 matplotlib.use("agg")
 client = pymongo.MongoClient("mongodb+srv://***REMOVED***:"+urllib.parse.quote("***REMOVED***")+"@cluster0.4pec2.mongodb.net/Checkra?retryWrites=true&w=majority")
 db = client["podcasts"]
@@ -17,8 +19,8 @@ collection=db["lmini"]
 
 
 app = Flask(__name__)
-app.debug = True
-
+app.config.from_object('config')
+app.register_blueprint(graphy, url_prefix="/topics")
 @app.route("/")
 def home():
     print(client.db_name)
@@ -61,7 +63,7 @@ def people_graph():
 
 @app.route("/topics")
 def topic_graph():
-    return render_template("topics.html")
+    return render_template("topics.html", topic = "hello")
 
 @app.route("/books")
 def book_graph():
@@ -119,5 +121,5 @@ def build_topic_plot(name):
     return Markup('<img src="data:image/png;base64,{}" >'.format(plot_url))
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0")
 
