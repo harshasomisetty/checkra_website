@@ -2,8 +2,16 @@
 {% block title %}Login Page{% endblock %}
 
 {% block content %}
+    
     <h6>Enter any name from the below options to explore their podcasts</h6>
-    <small>*Currently only supporting podcasts by Lex Fridman*</small>
+    {% with messages = get_flashed_messages() %}
+        {%if messages%}
+            {%for msg in messages%}
+                <b>{{msg}}</b><br>
+            {%endfor%}
+        {% endif %}
+    {%endwith%}
+    <br><small>*Currently only supporting podcasts by Lex Fridman*</small>
 
     <form action="#" method = "post" style="padding-top: 20px;">
         <p style="display:inline-block;"><input type="text" placeholder="Search Podcast by Guest" name="nm"/></p>

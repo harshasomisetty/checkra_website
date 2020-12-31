@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, render_template, request, Markup
+from flask import Flask, redirect, url_for, render_template, request, Markup, flash
 import urllib.parse
 import pymongo
 from pymongo import MongoClient
@@ -46,16 +46,20 @@ def guest(spkr):
 
 @app.route("/podcasts", methods=["GET", "POST"])
 def all_podcasts():
+    all_speakers = list(collection.find({}))
+    guests = []
+    for i in all_speakers:
+        guests.append(i["guest"])
     if request.method == "GET":
-        all_speakers = list(collection.find({}))
-        guests = []
-        for i in all_speakers:
-            guests.append(i["guest"])
-        
         return render_template("podcasts.html", guests = guests)
     else:
         speaker = request.form["nm"]
-        return redirect(url_for("guest", spkr=speaker))
+        if speaker in guests:
+            return redirect(url_for("guest", spkr=speaker))
+        else:
+            # print("dkjfldksfjd")
+            flash("Speaker not available at the moment")
+            return redirect(url_for("all_podcasts"))
 
 @app.route("/people")
 def people_graph():
