@@ -1,7 +1,5 @@
-from flask import Flask, redirect, url_for, render_template, request, Markup, flash
-import urllib.parse
-import pymongo
-from pymongo import MongoClient
+from flask import Flask, redirect, url_for, render_template, request, Markup
+from flask import current_app as app
 import json
 import io
 import base64
@@ -10,20 +8,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import math
-from podcasts.graphy import graphy
-
 matplotlib.use("agg")
-client = pymongo.MongoClient("mongodb+srv://***REMOVED***:"+urllib.parse.quote("***REMOVED***")+"@cluster0.4pec2.mongodb.net/Checkra?retryWrites=true&w=majority")
-db = client["podcasts"]
-collection=db["lmini"]
 
+from .extensions import mongo
+collection = mongo.db.lmini
 
-app = Flask(__name__)
-app.config.from_object('config')
-app.register_blueprint(graphy, url_prefix="/topics")
 @app.route("/")
 def home():
-    print(client.db_name)
     return render_template("home.html")
 
 @app.route("/podcasts/<spkr>/detailed")
@@ -46,20 +37,16 @@ def guest(spkr):
 
 @app.route("/podcasts", methods=["GET", "POST"])
 def all_podcasts():
-    all_speakers = list(collection.find({}))
-    guests = []
-    for i in all_speakers:
-        guests.append(i["guest"])
     if request.method == "GET":
+        all_speakers = list(collection.find({}))
+        guests = []
+        for i in all_speakers:
+            guests.append(i["guest"])
+        
         return render_template("podcasts.html", guests = guests)
     else:
         speaker = request.form["nm"]
-        if speaker in guests:
-            return redirect(url_for("guest", spkr=speaker))
-        else:
-            # print("dkjfldksfjd")
-            flash("Speaker not available at the moment")
-            return redirect(url_for("all_podcasts"))
+        return redirect(url_for("guest", spkr=speaker))
 
 @app.route("/people")
 def people_graph():
@@ -67,7 +54,7 @@ def people_graph():
 
 @app.route("/topics")
 def topic_graph():
-    return render_template("topics.html", topic = "hello")
+    return render_template("topics.html")
 
 @app.route("/books")
 def book_graph():
@@ -123,7 +110,3 @@ def build_topic_plot(name):
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
     return Markup('<img src="data:image/png;base64,{}" >'.format(plot_url))
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0")
-
