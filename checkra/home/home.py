@@ -15,6 +15,3 @@ def home():
 def about_page():
     return render_template("about.html")
 
-@home_bp.errorhandler(404)
-def page_not_found(e):
-    return render_template('doesnotexist.html'), 404
