@@ -1,4 +1,4 @@
-from podcasts import create_app
+from checkra import create_app
 
 app = create_app()
 

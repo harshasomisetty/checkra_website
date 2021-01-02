@@ -1,5 +1,5 @@
-from flask import Flask, redirect, url_for, render_template, request, Markup
-from flask import current_app as app
+from flask import Flask, redirect, url_for, render_template, request, Markup, Blueprint, current_app
+# from flask import current_app as app
 import json
 import io
 import base64
@@ -8,24 +8,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import math
+from ..extensions import mongo
 matplotlib.use("agg")
 
-from .extensions import mongo
+
 collection = mongo.db.lmini
+podcasts_bp = Blueprint(
+    'podcasts_bp', __name__,
+    template_folder='templates',
+    static_folder='static'
+)
 
-@app.route("/")
-def home():
-    return render_template("home.html")
+@podcasts_bp.route("/", methods=["GET", "POST"])
+def all_podcasts():
+    if request.method == "GET":
+        all_speakers = list(collection.find({}))
+        guests = []
+        for i in all_speakers:
+            guests.append(i["guest"])
+        return render_template("podcasts.html", guests = guests)
+    else:
+        speaker = request.form["nm"]
+        return redirect(url_for(".guest", spkr=speaker))
 
-@app.route("/podcasts/<spkr>/detailed")
-def detailed(spkr):
-    name = spkr.replace("_"," ")
-    subtopics = collection.find_one({"guest":name})["subtopics"]
-    for i in range(2): #so graph loads properly
-        plot = build_topic_plot(name)
-    return render_template("detailed_guest.html", summaries = subtopics, topic_plot = plot)
-
-@app.route("/podcasts/<spkr>", methods=["GET", "POST"])
+@podcasts_bp.route("/<spkr>", methods=["GET", "POST"])
 def guest(spkr):
     speaker = spkr
     name = spkr.replace("_"," ")
@@ -33,40 +39,18 @@ def guest(spkr):
     if request.method == "GET":
         return render_template("guest.html", info = info)
     else:
-        return redirect(url_for("detailed", spkr = speaker))
+        return redirect(url_for(".detailed", spkr = speaker))
 
-@app.route("/podcasts", methods=["GET", "POST"])
-def all_podcasts():
-    if request.method == "GET":
-        all_speakers = list(collection.find({}))
-        guests = []
-        for i in all_speakers:
-            guests.append(i["guest"])
-        
-        return render_template("podcasts.html", guests = guests)
-    else:
-        speaker = request.form["nm"]
-        return redirect(url_for("guest", spkr=speaker))
 
-@app.route("/people")
-def people_graph():
-    return render_template("people.html")
+@podcasts_bp.route("/<spkr>/detailed")
+def detailed(spkr):
+    name = spkr.replace("_"," ")
+    subtopics = collection.find_one({"guest":name})["subtopics"]
+    for i in range(2): #so graph loads properly
+        plot = build_topic_plot(name)
+    return render_template("detailed_guest.html", summaries = subtopics, topic_plot = plot)
 
-@app.route("/topics")
-def topic_graph():
-    return render_template("topics.html")
 
-@app.route("/books")
-def book_graph():
-    return render_template("books.html")
-
-@app.route("/about")
-def about_page():
-    return render_template("about.html")
-
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('doesnotexist.html'), 404
 
 
 def stamps_expanded(stamps, sent_count):
