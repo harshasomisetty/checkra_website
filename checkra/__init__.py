@@ -13,11 +13,13 @@ def create_app():
 
     from .home import home
     from .podcasts import podcasts
+    # from .graphs import graphs
     
     with app.app_context():
 
         app.register_blueprint(home.home_bp)
         app.register_blueprint(podcasts.podcasts_bp, url_prefix="/podcasts")
+        # app.register_blueprint(graphs.graphs_bp, url_prefix="graphs")
 
         app.register_error_handler(404, page_not_found)
         # print(vars)

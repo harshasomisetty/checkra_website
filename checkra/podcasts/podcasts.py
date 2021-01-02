@@ -1,5 +1,4 @@
-from flask import Flask, redirect, url_for, render_template, request, Markup, Blueprint, current_app
-# from flask import current_app as app
+from flask import redirect, url_for, render_template, request, Markup, Blueprint
 import json
 import io
 import base64
