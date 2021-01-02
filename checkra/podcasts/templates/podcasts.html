@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Login Page{% endblock %}
+{% block title %}Podcasts
+
+{% endblock %}
+
+{% block head%}    
+<link rel="stylesheet" href = "{{url_for('static', filename='podcasts.css')}}">
+{%endblock%}
 
 {% block content %}
     <h6>Enter any name from the below options to explore their podcasts</h6>
@@ -10,7 +16,7 @@
         <p style="display:inline-block;"><input type="submit" class="btn btn-outline-dark" value="search"/></p>
     </form>
 
-    <div class="podcast-guest-grid">
+    <div class="podcast-guest-grid" style="text-align:center;">
         {%for i in guests%}
             <div class="grid-item">{{i}}</div>
         {% endfor %}
