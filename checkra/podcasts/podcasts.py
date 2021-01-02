@@ -11,7 +11,7 @@ from ..extensions import mongo
 matplotlib.use("agg")
 
 
-collection = mongo.db.lmini
+collection = mongo.db.lex
 podcasts_bp = Blueprint(
     'podcasts_bp', __name__,
     template_folder='templates',
