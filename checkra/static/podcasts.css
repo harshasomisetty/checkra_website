@@ -9,3 +9,8 @@
   grid-template-columns: auto auto auto auto auto auto auto;
   padding:5px
 }
+
+.grid-item {
+  padding: 20px;
+  text-align: center;
+}
