@@ -8,10 +8,8 @@ home_bp = Blueprint(
 
 @home_bp.route('/')
 def home():
-    print(mongo.db.lex.find({}))
     return render_template("home.html")
 
 @home_bp.route("/about")
 def about_page():
     return render_template("about.html")
-

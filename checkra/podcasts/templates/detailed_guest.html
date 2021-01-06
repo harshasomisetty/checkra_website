@@ -11,7 +11,7 @@
 <!--  -->
 <br>
 {%for topic in summaries%}
-<p>{{loop.index}} {{" ".join(topic)}}</p>
+<p>{{loop.index}} {{" ".join(topic[:3])}}</p>
 {%endfor%}
 
 {% endblock %}

@@ -27,27 +27,25 @@ def all_podcasts():
             guests.append(i["guest"])
         return render_template("podcasts.html", guests = guests)
     else:
-        speaker = request.form["nm"]
-        return redirect(url_for(".guest", spkr=speaker))
+        return redirect(url_for(".guest", speaker = request.form["nm"]))
 
-@podcasts_bp.route("/<spkr>", methods=["GET", "POST"])
-def guest(spkr):
-    speaker = spkr
-    name = spkr.replace("_"," ")
+@podcasts_bp.route("/<speaker>", methods=["GET", "POST"])
+def guest(speaker):
+    name = speaker.replace("_"," ")
     info = collection.find_one({"guest":name})
     if request.method == "GET":
         return render_template("guest.html", info = info)
     else:
-        return redirect(url_for(".detailed", spkr = speaker))
+        return redirect(url_for(".detailed", speaker = speaker))
 
 
-@podcasts_bp.route("/<spkr>/detailed")
-def detailed(spkr):
-    name = spkr.replace("_"," ")
+@podcasts_bp.route("/<speaker>/detailed")
+def detailed(speaker):
+    name = speaker.replace("_"," ")
     subtopics = collection.find_one({"guest":name})["subtopics"]
     for i in range(2): #so graph loads properly
         plot = build_topic_plot(name)
-    return render_template("detailed_guest.html", summaries = subtopics, topic_plot = plot)
+    return render_template("detailed_guest.html", speaker = speaker, summaries = subtopics, topic_plot = plot)
 
 
 

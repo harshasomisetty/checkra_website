@@ -1,4 +1,6 @@
 from flask import Flask, redirect, url_for, render_template, request, Markup, Blueprint
+from flask_assets import Environment
+from bs4 import BeautifulSoup
 
 from .extensions import mongo
 
@@ -13,27 +15,14 @@ def create_app():
 
     from .home import home
     from .podcasts import podcasts
-    # from .graphs import graphs
     
     with app.app_context():
 
         app.register_blueprint(home.home_bp)
         app.register_blueprint(podcasts.podcasts_bp, url_prefix="/podcasts")
-        # app.register_blueprint(graphs.graphs_bp, url_prefix="graphs")
-
         app.register_error_handler(404, page_not_found)
-        # print(vars)
-        return app
+        
+        from .graphs.dashboard import init_dashboard
+        app, dashapp1 = init_dashboard(app)
 
-
-# @app.route("/people")
-# def people_graph():
-#     return render_template("people.html")
-
-# @app.route("/topics")
-# def topic_graph():
-#     return render_template("topics.html")
-
-# @app.route("/books")
-# def book_graph():
-#     return render_template("books.html")
+        return app, dashapp1
