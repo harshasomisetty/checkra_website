@@ -24,5 +24,5 @@ def create_app():
         
         from .graphs.dashboard import init_dashboard
         app, dashapp1 = init_dashboard(app)
-
+        
         return app, dashapp1

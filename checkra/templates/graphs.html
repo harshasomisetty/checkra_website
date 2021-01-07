@@ -1,9 +1,14 @@
 {% extends "base.html" %}
+{% block title %}Entity Graphs{% endblock %}
+
+{%block head%}
+<link rel="stylesheet" href = "{{url_for('static', filename='dash.css')}}">
+{%endblock%}
+
 {% block content %}
-    <div id="react-entry-point">
-        <div class="_dash-loading">
-            Loading...
-        </div>
+
+    <div id="react-entry-point"> 
     </div>
     {{ footer|safe }}
-{% endblock content %}
+
+{% endblock content %} 
