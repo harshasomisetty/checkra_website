@@ -2,6 +2,8 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_cytoscape as cyto
+from dash.dependencies import Input, Output
 import dash_table
 import numpy as np
 import pandas as pd
@@ -39,62 +41,57 @@ def init_dashboard(server):
     #     paper_bgcolor=colors['background'],
     #     font_color=colors['text']
     # )
+    ent_cats = ["books", 'places', 'people']
     dash_app.layout = html.Div([
-        html.Label('Dropdown'),
+        html.Label("Entity Category"),
         dcc.Dropdown(
-            options=[
-                {'label': 'New York City', 'value': 'NYC'},
-                {'label': u'Montréal', 'value': 'MTL'},
-                {'label': 'San Francisco', 'value': 'SF'}
+            id = "entity_category",
+            options = [
+                {'label': ent, 'value': ent} for ent in ent_cats
             ],
-            value='MTL'
+            value = ent_cats[0]
         ),
-
-        html.Label('Multi-Select Dropdown'),
+        html.Label("Available Entities"),
         dcc.Dropdown(
-            options=[
-                {'label': 'New York City', 'value': 'NYC'},
-                {'label': u'Montréal', 'value': 'MTL'},
-                {'label': 'San Francisco', 'value': 'SF'}
-            ],
-            value=['MTL', 'SF'],
-            multi=True
+            id = "available_entities"
         ),
 
-        html.Label('Radio Items'),
-        dcc.RadioItems(
-            options=[
-                {'label': 'New York City', 'value': 'NYC'},
-                {'label': u'Montréal', 'value': 'MTL'},
-                {'label': 'San Francisco', 'value': 'SF'}
-            ],
-            value='MTL',
-            style={
-                'display':"block;",
-            }
-        ),
+        html.Label("Mentions by Podcasters"),
+        cyto.Cytoscape(
+            id='mentions',
+            
+            layout={'name': 'breadthfirst'},
+            style={'width': '400px', 'height': '500px'},
+            elements=[
+                {
+                    'data': {'id': 'one', 'label': 'Locked'},
+                    'position': {'x': 75, 'y': 75},
+                    'locked': True
+                },
+                {
+                    'data': {'id': 'two', 'label': 'Selected'},
+                    'position': {'x': 75, 'y': 200},
+                    'selected': True
+                },
+                {
+                    'data': {'id': 'three', 'label': 'Not Selectable'},
+                    'position': {'x': 200, 'y': 75},
+                    'selectable': False
+                },
+                {
+                    'data': {'id': 'four', 'label': 'Not grabbable'},
+                    'position': {'x': 200, 'y': 200},
+                    'grabbable': False
+                },
+                {'data': {'source': 'one', 'target': 'two'}},
+                {'data': {'source': 'two', 'target': 'three'}},
+                {'data': {'source': 'three', 'target': 'four'}},
+                {'data': {'source': 'two', 'target': 'four'}},
+            ]
+        )
 
-        html.Label('Checkboxes'),
-        dcc.Checklist(
-            options=[
-                {'label': 'New York City', 'value': 'NYC'},
-                {'label': u'Montréal', 'value': 'MTL'},
-                {'label': 'San Francisco', 'value': 'SF'}
-            ],
-            value=['MTL', 'SF']
-        ),
-
-        html.Label('Text Input'),
-        dcc.Input(value='MTL', type='text'),
-
-        html.Label('Slider'),
-        dcc.Slider(
-            min=0,
-            max=9,
-            marks={i: 'Label {}'.format(i) if i == 1 else str(i) for i in range(1, 6)},
-            value=5,
-        ),
-    ], style={'columnCount': 2})
+    ])
+    init_callbacks(dash_app)
 
     return dash_app.server, dash_app
 
@@ -108,6 +105,28 @@ def init_dashboard(server):
 #     df.replace(to_remove, np.nan, inplace=True)
 #     return df
  
+def init_callbacks(dash_app):
+    @dash_app.callback(
+        Output('available_entities', 'options'),
+        Input('entity_category', 'value')
+
+    )
+    def update_entities(category):
+        docs = collection.find({},{"_id":0, category:1})
+        filtered = list(set([ent for arr in docs for ent in arr[category]]))
+        # return filtered
+        # print([mini for mini in ])
+        return [{'label': i, 'value': i} for i in filtered]
+
+    @dash_app.callback(
+        Output("mentions", "elements"),
+        Input('available_entities', 'value')
+    )
+    def update_graph(value):
+        elements = []
+        print(list(collection.find({"books":[value]},{"_id":0,"guest":1, "books":1})))
+        print(value)
+
 
 def create_data_table(df):
     """Create Dash datatable from Pandas DataFrame."""
