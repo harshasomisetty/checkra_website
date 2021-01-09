@@ -23,109 +23,102 @@ def init_dashboard(server):
             'https://codepen.io/chriddyp/pen/bWLwgP.css'
         ],
     )
-    # colors = {
-    #     'background': '#111111',
-    #     'text': '#7FDBFF'
-    # }
-    # # Load DataFrame
-    # # df = create_dataframe()
-    # df = pd.DataFrame({
-    # "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    # "Amount": [4, 1, 2, 2, 4, 5],
-    # "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-    # })
 
-    # fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
-    # fig.update_layout(
-    #     plot_bgcolor=colors['background'],
-    #     paper_bgcolor=colors['background'],
-    #     font_color=colors['text']
-    # )
-    ent_cats = ["books", 'places', 'people']
+    #TODO make graph nodes smaller, make edges further away
+    #TODO fix database stuff
+    #TODO add links from single podcasts to entity graphs
+    #TODO add links from each node in entity graph to podcast detail
+
+    ent_cats = ['books', 'keywords','places', 'people']
     dash_app.layout = html.Div([
-        html.Label("Entity Category"),
-        dcc.Dropdown(
-            id = "entity_category",
-            options = [
-                {'label': ent, 'value': ent} for ent in ent_cats
-            ],
-            value = ent_cats[0]
+        html.H5(children=
+            "Choose an Entity Category and a Entity to Visualize its Relations",
+            style={'text-align':'center', 'padding-bottom':'10px'}
         ),
-        html.Label("Available Entities"),
-        dcc.Dropdown(
-            id = "available_entities"
-        ),
+        html.Div(children=[ #options
+            html.Div(children=[
+                html.Small(children = "Entity Category", style = {'text-align':'center', 'padding-bottom':'10px'}),
+                dcc.Dropdown(
+                    id = "entity_category",
+                    options = [
+                        {'label': ent, 'value': ent} for ent in ent_cats
+                    ],
+                    value = ent_cats[0]
+                )
+            ], style={'display': 'inline-block','width':'200px'}),
+            html.Div(children=[
+                html.Small(children = "Available Entities", style = {'text-align':'center', 'padding-bottom':'10px'}),
+                dcc.Dropdown(
+                    id = "available_entities"
+                )
+            ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
+        ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'20px'}),
+        
+        html.Div(children=[ #graph display
+            html.Label("Mentions by Podcasters"),
+            cyto.Cytoscape(
+                id='mentions',
+                
+                layout={'name': 'concentric'},
+                style={'width': '100%', 'height': '700px'},
+                stylesheet=[
+                    {
+                        'selector': 'node',
+                        'style': {
+                            'content': 'data(label)'
+                        }
+                    },
+                    {
+                        'selector':'.search',
+                        'style': {
+                            'background-color':'red'
+                        }
+                    },
+                    {
+                        'selector':'.result',
+                        'style': {
+                            'background-color':'blue'
+                        }
+                    }
+                ]
+            )
+        ])
+        
 
-        html.Label("Mentions by Podcasters"),
-        cyto.Cytoscape(
-            id='mentions',
-            
-            layout={'name': 'breadthfirst'},
-            style={'width': '400px', 'height': '500px'},
-            elements=[
-                {
-                    'data': {'id': 'one', 'label': 'Locked'},
-                    'position': {'x': 75, 'y': 75},
-                    'locked': True
-                },
-                {
-                    'data': {'id': 'two', 'label': 'Selected'},
-                    'position': {'x': 75, 'y': 200},
-                    'selected': True
-                },
-                {
-                    'data': {'id': 'three', 'label': 'Not Selectable'},
-                    'position': {'x': 200, 'y': 75},
-                    'selectable': False
-                },
-                {
-                    'data': {'id': 'four', 'label': 'Not grabbable'},
-                    'position': {'x': 200, 'y': 200},
-                    'grabbable': False
-                },
-                {'data': {'source': 'one', 'target': 'two'}},
-                {'data': {'source': 'two', 'target': 'three'}},
-                {'data': {'source': 'three', 'target': 'four'}},
-                {'data': {'source': 'two', 'target': 'four'}},
-            ]
-        )
-
-    ])
+    ]
+)
     init_callbacks(dash_app)
 
     return dash_app.server, dash_app
 
-# def create_dataframe(): #method to convert a csv to dataframe
-#     """Create Pandas DataFrame from local CSV."""
-#     df = pd.read_csv("checkra/data/311-calls.csv", parse_dates=["created"])
-#     df["created"] = df["created"].dt.date
-#     df.drop(columns=["incident_zip"], inplace=True)
-#     num_complaints = df["complaint_type"].value_counts()
-#     to_remove = num_complaints[num_complaints <= 30].index
-#     df.replace(to_remove, np.nan, inplace=True)
-#     return df
  
 def init_callbacks(dash_app):
     @dash_app.callback(
         Output('available_entities', 'options'),
+        Output('available_entities', 'value'),
         Input('entity_category', 'value')
 
     )
     def update_entities(category):
         docs = collection.find({},{"_id":0, category:1})
         filtered = list(set([ent for arr in docs for ent in arr[category]]))
-        # return filtered
-        # print([mini for mini in ])
-        return [{'label': i, 'value': i} for i in filtered]
+        all_options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
+        return all_options, all_options[0]['value']
 
     @dash_app.callback(
         Output("mentions", "elements"),
-        Input('available_entities', 'value')
+        Input('available_entities', 'value'),
+        Input('entity_category', 'value')
     )
-    def update_graph(value):
-        elements = []
-        print(list(collection.find({"books":[value]},{"_id":0,"guest":1, "books":1})))
-        print(value)
+    def update_graph(value, category):
+
+        elements = [{'data':{"id":value, 'label':value}, 'classes':'search'}]
+        for doc in collection.find({category:value},{"_id":0,"guest":1, "books":1}):
+            # print(doc, "\n")
+            elements.append({'data':{"id":doc["guest"], 'label':doc["guest"]}, 'classes':'result'})
+            elements.append({'data':{"source":value, 'target':doc["guest"]}, 'classes':'result'})
+        return elements
+
 
 
 def create_data_table(df):
