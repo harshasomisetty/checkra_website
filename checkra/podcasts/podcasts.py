@@ -34,11 +34,9 @@ def guest(speaker):
     name = speaker.replace("_"," ")
     info = collection.find_one({"guest":name})
     if request.method == "GET":
-        print(info['traits'].keys())
         return render_template("guest.html", info = info)
     else:
         return redirect(url_for(".detailed", speaker = speaker))
-
 
 @podcasts_bp.route("/<speaker>/detailed")
 def detailed(speaker):
@@ -47,8 +45,6 @@ def detailed(speaker):
     for i in range(2): #so graph loads properly
         plot = build_topic_plot(name)
     return render_template("detailed_guest.html", speaker = speaker, summaries = subtopics, topic_plot = plot)
-
-
 
 
 def stamps_expanded(stamps, sent_count):

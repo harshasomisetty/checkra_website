@@ -18,7 +18,7 @@
     
     <p>{{" ".join(info["summary"])}}</p> 
     
-    {% for trait in info["traits"].keys() if trait!="Topics"%}
+    {% for trait in info["traits"].keys() if trait!="Topics" and info["traits"][trait]|length>0%}
         <h4 style="padding-top:20px;">{{trait}}</h4>
 
         <div class="grid-container">

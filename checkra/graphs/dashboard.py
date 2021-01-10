@@ -8,7 +8,7 @@ from dash.dependencies import Input, Output
 import dash_table
 import numpy as np
 import pandas as pd
-
+from flask import redirect, url_for, render_template, request, Markup, Blueprint
 from ..extensions import mongo
 import plotly.express as px
 import os
@@ -55,8 +55,7 @@ def init_dashboard(server):
                 )
             ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
         ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'60px'}),
-        html.P(id='cytoscape-tapNodeData-output'),
-        html.P(id='cytoscape-mouseoverNodeData-output'),
+        
         html.Div(children=[ #graph display
             cyto.Cytoscape(
                 id='cytoscape-mentions',
@@ -87,7 +86,8 @@ def init_dashboard(server):
                 ]
             )
         ]),
-        
+        html.Div(id='cytoscape-tapNodeData-output'),
+        html.P(id='cytoscape-mouseoverNodeData-output')
         
     ])
     init_callbacks(dash_app)
@@ -131,9 +131,14 @@ def init_callbacks(dash_app):
         # return render_template("guest.html", info = info)
         if data["type"] !="initial":
             print(data)
-            info = collection.find({"guest":data["label"]})
-            print(info)
-            return json.dumps(data, indent=2)
+            info = list(collection.find({"guest":data["label"]}))[0]
+            url = "/podcasts/"+info["guest"]
+            print(info["guest"])
+            # print(info)
+            # print(dir(podcasts))
+            return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
+            # return redirect(url_for("podcasts_bp.guest", speaker=i["guest"]))
+            # return json.dumps(data, indent=2)
         # if data:
             # return "You recently clicked/tapped the city: " + data["guest"]
     
@@ -141,7 +146,8 @@ def init_callbacks(dash_app):
                   Input('cytoscape-mentions', 'mouseoverNodeData'))
     def displayTapNodeData(data):
         if data["type"] !="initial":
-            return str(data["label"])
+            title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
+            return str(data["label"]+"-"+title)
         # return render_template("guest.html", info = info)))
         # if data:
             # return "You recently hovered over the city: " + data["title"]

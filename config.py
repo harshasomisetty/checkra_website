@@ -5,7 +5,7 @@ class Config(object):
     TESTING = False
 
 class ProductionConfig(Config):
-    MONGO_URI = "mongodb+srv://***REMOVED***:"+urllib.parse.quote("***REMOVED***")+"@cluster0.4pec2.mongodb.net/podcasts?retryWrites=true&w=majority"
+    MONGO_URI = "mongodb+srv://***REMOVED***:"+urllib.parse.quote("***REMOVED***")+"@cluster0.4pec2.mongodb.net/production?retryWrites=true&w=majority"
 
 class DevelopmentConfig(Config):
     FLASK_ENV="development"

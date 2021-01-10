@@ -10,7 +10,7 @@ def page_not_found(e):
 def create_app():
     """Create Flask application."""
     app = Flask(__name__, instance_relative_config=False)
-    app.config.from_object("config.DevelopmentConfig")
+    app.config.from_object("config.ProductionConfig")
     mongo.init_app(app)
 
     from .home import home
