@@ -18,28 +18,15 @@
     
     <p>{{" ".join(info["summary"])}}</p> 
     
-    <h4 style="padding-top:20px;">Books</h4>
+    {% for trait in info["traits"].keys() if trait!="Topics"%}
+        <h4 style="padding-top:20px;">{{trait}}</h4>
 
-    <div class="grid-container">
-        {% for book in info["books"]%}
-            <div class="grid-item">{{book}}</div>
-        {%endfor%}
-    </div>
+        <div class="grid-container">
+            {% for ent in info["traits"][trait]%}
+                <div class="grid-item">{{ent}}</div>
+            {%endfor%}
+        </div>
+    {%endfor%}
 
-    
-    <h4 style="padding-top:20px;">People</h4>
-    <div class="grid-container">
-        {% for person in info["people"]%}
-            <div class="grid-item">{{person}}</div>
-        {%endfor%}
-    </div>
-        
-
-    <h4 style="padding-top:20px;">Places</h4>
-    <div class="grid-container">
-        {% for place in info["places"]%}
-            <div class="grid-item">{{place}}</div>
-        {%endfor%}
-    </div>
 
 {% endblock %}

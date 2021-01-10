@@ -34,6 +34,7 @@ def guest(speaker):
     name = speaker.replace("_"," ")
     info = collection.find_one({"guest":name})
     if request.method == "GET":
+        print(info['traits'].keys())
         return render_template("guest.html", info = info)
     else:
         return redirect(url_for(".detailed", speaker = speaker))

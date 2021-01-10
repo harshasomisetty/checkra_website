@@ -23,13 +23,12 @@ def init_dashboard(server):
             'https://codepen.io/chriddyp/pen/bWLwgP.css'
         ],
     )
-
+    #TODO fix database stuff (add all categories in one dict, capitalize categories)
     #TODO make graph nodes smaller, make edges further away
-    #TODO fix database stuff
     #TODO add links from single podcasts to entity graphs
     #TODO add links from each node in entity graph to podcast detail
-
-    ent_cats = ['books', 'keywords','places', 'people']
+    
+    ent_cats = list(collection.find_one({},{"traits":1, "_id":0})["traits"].keys())
     dash_app.layout = html.Div([
         html.H5(children=
             "Choose an Entity Category and a Entity to Visualize its Relations",
@@ -52,15 +51,14 @@ def init_dashboard(server):
                     id = "available_entities"
                 )
             ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
-        ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'20px'}),
+        ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'60px'}),
         
         html.Div(children=[ #graph display
-            html.Label("Mentions by Podcasters"),
             cyto.Cytoscape(
                 id='mentions',
                 
                 layout={'name': 'concentric'},
-                style={'width': '100%', 'height': '700px'},
+                style={'width': '60%', 'height': '500px', 'margin':'auto'},
                 stylesheet=[
                     {
                         'selector': 'node',
@@ -100,8 +98,9 @@ def init_callbacks(dash_app):
 
     )
     def update_entities(category):
-        docs = collection.find({},{"_id":0, category:1})
-        filtered = list(set([ent for arr in docs for ent in arr[category]]))
+        # category = "traits."+category
+        queried = collection.find({},{"_id":0, "traits."+category:1})
+        filtered = list(set([ent for doc in queried for ent in doc["traits"][category]]))
         all_options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
         return all_options, all_options[0]['value']
 
@@ -111,7 +110,7 @@ def init_callbacks(dash_app):
         Input('entity_category', 'value')
     )
     def update_graph(value, category):
-
+        category = "traits."+category
         elements = [{'data':{"id":value, 'label':value}, 'classes':'search'}]
         for doc in collection.find({category:value},{"_id":0,"guest":1, "books":1}):
             # print(doc, "\n")
