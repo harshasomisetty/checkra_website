@@ -27,7 +27,12 @@ def all_podcasts():
             guests.append(i["guest"])
         return render_template("podcasts.html", guests = guests)
     else:
-        return redirect(url_for(".guest", speaker = request.form["nm"]))
+        speaker = request.form["nm"]
+        print(len(list(collection.find({"guest":speaker},{"_id":0,"guest":1}))))
+        if len(list(collection.find({"guest":speaker},{"_id":0,"guest":1})))>0:
+            return redirect(url_for(".guest", speaker = speaker))
+        else:
+            return render_template('doesnotexist.html'), 404
 
 @podcasts_bp.route("/<speaker>", methods=["GET", "POST"])
 def guest(speaker):

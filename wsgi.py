@@ -12,5 +12,10 @@ def entity_graphs():
     footer = BeautifulSoup(graphs_app.index(),"html.parser").footer
     return render_template('graphs.html', title='Entity Graphs', footer=footer)
 
+# @app.errorhandler(404)
+# def page_not_found(e):
+#     print("sdlkfjsd")
+#     return render_template('doesnotexist.html'), 404
+
 if __name__=="__main__":
     app.run(host='0.0.0.0', threaded=True)

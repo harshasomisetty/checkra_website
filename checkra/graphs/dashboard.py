@@ -28,10 +28,8 @@ def init_dashboard(server):
 
     #TODO make graph nodes smaller, make edges further away
     #TODO add links from single podcasts to entity graphs
-    #TODO add links from each node in entity graph to podcast detail
     
-    cats = list(collection.find_one({},{"traits":1, "_id":0})["traits"].keys())
-    ent_cats = sorted(cats)
+    ent_cats = sorted(list(collection.find_one({},{"traits":1, "_id":0})["traits"].keys()))#get all categories stored in mongo
     dash_app.layout = html.Div([
         html.H5(children=
             "Choose an Entity Category and a Entity to Visualize its Relations",
@@ -84,7 +82,7 @@ def init_dashboard(server):
                         }
                     }
                 ]
-            )
+            )#end node graph code
         ]),
         html.Div(id='cytoscape-tapNodeData-output'),
         html.P(id='cytoscape-mouseoverNodeData-output')
@@ -97,21 +95,19 @@ def init_dashboard(server):
  
 def init_callbacks(dash_app):
 
-    @dash_app.callback(
+    @dash_app.callback(#update available entities for a category
         Output('available_entities', 'options'),
         Output('available_entities', 'value'),
         Input('entity_category', 'value')
-
     )
     def update_entities(category):
-        # category = "traits."+category
         queried = collection.find({},{"_id":0, "traits."+category:1})
         filtered = list(set([ent for doc in queried for ent in doc["traits"][category]]))
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
         sorted_options = sorted(options, key = lambda x:x["label"])
         return sorted_options, sorted_options[0]['value']
 
-    @dash_app.callback(
+    @dash_app.callback( #update graph elements
         Output("cytoscape-mentions", "elements"),
         Input('available_entities', 'value'),
         Input('entity_category', 'value')
@@ -120,50 +116,31 @@ def init_callbacks(dash_app):
         category = "traits."+category
         elements = [{'data':{"id":value, 'label':value, 'type':'initial'}, 'classes':'search'}]
         for doc in collection.find({category:value},{"_id":0,"guest":1, "books":1}):
-            # print(doc, "\n")
             elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
             elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
         return elements
     
-    @dash_app.callback(Output('cytoscape-tapNodeData-output', 'children'),
-                  Input('cytoscape-mentions', 'tapNodeData'))
-    def displayTapNodeData(data):
-        # return render_template("guest.html", info = info)
-        if data["type"] !="initial":
-            print(data)
-            info = list(collection.find({"guest":data["label"]}))[0]
-            url = "/podcasts/"+info["guest"]
-            print(info["guest"])
-            # print(info)
-            # print(dir(podcasts))
-            return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
-            # return redirect(url_for("podcasts_bp.guest", speaker=i["guest"]))
-            # return json.dumps(data, indent=2)
-        # if data:
-            # return "You recently clicked/tapped the city: " + data["guest"]
-    
-    @dash_app.callback(Output('cytoscape-mouseoverNodeData-output', 'children'),
-                  Input('cytoscape-mentions', 'mouseoverNodeData'))
-    def displayTapNodeData(data):
-        if data["type"] !="initial":
-            title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
-            return str(data["label"]+"-"+title)
-        # return render_template("guest.html", info = info)))
-        # if data:
-            # return "You recently hovered over the city: " + data["title"]
-
-# html.P(id='cytoscape-tapNodeData-output'),
-#         html.P(id='cytoscape-mouseoverNodeData-output')
-
-def create_data_table(df):
-    """Create Dash datatable from Pandas DataFrame."""
-    table = dash_table.DataTable(
-        id="database-table",
-        columns=[{"name": i, "id": i} for i in df.columns],
-        data=df.to_dict("records"),
-        sort_action="native",
-        sort_mode="native",
-        page_size=300,
+    @dash_app.callback( #redirect to podcast breakdown
+        Output('cytoscape-tapNodeData-output', 'children'),
+        Input('cytoscape-mentions', 'tapNodeData')\
     )
-    return table
-
+    def displayTapNodeData(data):
+        try:
+            if data["type"] !="initial":
+                info = list(collection.find({"guest":data["label"]}))[0]
+                url = "/podcasts/"+info["guest"]
+                return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
+        except:
+            pass
+    
+    @dash_app.callback( #display side title
+        Output('cytoscape-mouseoverNodeData-output', 'children'),
+        Input('cytoscape-mentions', 'mouseoverNodeData')
+    )
+    def displayTapNodeData(data):
+        try:
+            if data["type"] !="initial":
+                title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
+                return str(data["label"]+"-"+title)
+        except:
+            pass
