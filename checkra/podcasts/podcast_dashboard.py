@@ -63,7 +63,7 @@ def init_callbacks(dash_app):
     @dash_app.callback(#update available entities for a category
         # Output('available_entities', 'options'),
         Output('podcast_result', 'children'),
-        # Output('timestamps','figure')
+        Output('timestamps','figure'),
         Input('speakers', 'value')
     )
     def update_podcast(guest_name):
@@ -77,10 +77,12 @@ def init_callbacks(dash_app):
         final_topic_confi = stamps_expanded(stamps, sent_count)
         top_confi = np.zeros([int(math.log(word_count)), sent_count]) #2d array of confidences for each topic
         x_vals = np.arange(sent_count)
-        df = pd.DataFrame(top_confi, columns = x_vals)
-        # fig = px.line()
-        print(df)
-        return str(sent_count)+" "+str(word_count)
+        # df = pd.DataFrame(top_confi)
+        for ind, i in enumerate(final_topic_confi): #set graph
+            top_confi[int(i)][ind] = .8
+        fig = px.line(x=x_vals, y=[topic for topic in top_confi])
+        # print(df)
+        return str(sent_count)+" "+str(word_count)+" "+str(len(top_confi)), fig
 
         # print(stamps.keys())
         # ret_string = ""
