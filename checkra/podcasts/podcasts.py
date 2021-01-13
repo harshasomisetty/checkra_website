@@ -28,7 +28,6 @@ def all_podcasts():
         return render_template("podcasts.html", guests = guests)
     else:
         speaker = request.form["nm"]
-        print(len(list(collection.find({"guest":speaker},{"_id":0,"guest":1}))))
         if len(list(collection.find({"guest":speaker},{"_id":0,"guest":1})))>0:
             return redirect(url_for(".guest", speaker = speaker))
         else:

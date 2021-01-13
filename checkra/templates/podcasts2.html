@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Single Podcasts{% endblock %}
+
+{%block head%}
+<link rel="stylesheet" href = "{{url_for('static', filename='dash.css')}}">
+{%endblock%}
+
+{% block content %}
+    
+    <div id="react-entry-point"> 
+    </div>
+    {{ footer|safe }}
+
+{% endblock content %} 
