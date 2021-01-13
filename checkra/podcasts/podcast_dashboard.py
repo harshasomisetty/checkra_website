@@ -77,10 +77,10 @@ def init_callbacks(dash_app):
         final_topic_confi = stamps_expanded(stamps, sent_count)
         top_confi = np.zeros([int(math.log(word_count)), sent_count]) #2d array of confidences for each topic
         x_vals = np.arange(sent_count)
-        df = pd.DataFrame(top_confi, columns = xvals)
+        df = pd.DataFrame(top_confi, columns = x_vals)
         # fig = px.line()
         print(df)
-        return sent_count+" "+word_count+" "+stamps
+        return str(sent_count)+" "+str(word_count)
 
         # print(stamps.keys())
         # ret_string = ""
