@@ -27,38 +27,42 @@ def init_dashboard(server):
     )
 
     #TODO make graph nodes smaller, make edges further away
-    #TODO add links from single podcasts to entity graphs
+    
     
     ent_cats = sorted(list(collection.find_one({},{"traits":1, "_id":0})["traits"].keys()))#get all categories stored in mongo
     dash_app.layout = html.Div([
-        html.H5(children=
-            "Choose an Entity Category and a Entity to Visualize its Relations",
-            style={'text-align':'center', 'padding-bottom':'10px'}
+        html.H3(
+            children="Choose an Entity Category and Entity to see Mentions by Podcast Guests",
+            style={'text-align':'center', 'padding-bottom':'20px'}
         ),
-        html.Div(children=[ #options
-            html.Div(children=[
-                html.Small(children = "Entity Category", style = {'text-align':'center', 'padding-bottom':'10px'}),
-                dcc.Dropdown(
-                    id = "entity_category",
-                    options = [
-                        {'label': ent, 'value': ent} for ent in ent_cats
-                    ],
-                    value = ent_cats[0]
-                )
-            ], style={'display': 'inline-block','width':'200px'}),
-            html.Div(children=[
-                html.Small(children = "Available Entities", style = {'text-align':'center', 'padding-bottom':'10px'}),
-                dcc.Dropdown(
-                    id = "available_entities"
-                )
-            ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
-        ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'60px'}),
+        html.Div(
+            children=[ #options
+                html.Div(children=[
+                    html.P(children = "Entity Category", style = {'text-align':'center'}),
+                    dcc.Dropdown(
+                        id = "entity_category",
+                        style = {'text-align':'center'},
+                        options = [
+                            {'label': ent, 'value': ent} for ent in ent_cats
+                        ],
+                        value = ent_cats[0]
+                    )
+                ], style={'display': 'inline-block','width':'200px'}),
+                html.Div(children=[
+                    html.P(children = "Available Entities", style = {'text-align':'center'}),
+                    dcc.Dropdown(
+                        id = "available_entities",
+                        style = {'text-align':'center'}
+                    )
+                ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
+            ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'60px'}
+        ),
         
         html.Div(children=[ #graph display
+            html.H5(id = "cytoscape-title", style={"text-align":"center"}),
             cyto.Cytoscape(
                 id='cytoscape-mentions',
-                
-                layout={'name': 'concentric', 'componentSpacing':60},
+                layout={'name': 'concentric', 'componentSpacing':200},
                 responsive=True,
                 style={'width': '60%', 'height': '600px', 'margin':'auto'},
                 stylesheet=[
@@ -72,13 +76,13 @@ def init_dashboard(server):
                     {
                         'selector':'.search',
                         'style': {
-                            'background-color':'lightgrey'
+                            'background-color':'#0099cc'
                         }
                     },
                     {
                         'selector':'.result',
                         'style': {
-                            'background-color':'dimgrey'
+                            'background-color':'#ff6666'
                         }
                     }
                 ]
@@ -109,6 +113,7 @@ def init_callbacks(dash_app):
 
     @dash_app.callback( #update graph elements
         Output("cytoscape-mentions", "elements"),
+        Output('cytoscape-title',"children"),
         Input('available_entities', 'value'),
         Input('entity_category', 'value')
     )
@@ -118,7 +123,7 @@ def init_callbacks(dash_app):
         for doc in collection.find({category:value},{"_id":0,"guest":1, "books":1}):
             elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
             elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
-        return elements
+        return elements, 'Mentions Graph of "'+str(value)+'"'
     
     @dash_app.callback( #redirect to podcast breakdown
         Output('cytoscape-tapNodeData-output', 'children'),

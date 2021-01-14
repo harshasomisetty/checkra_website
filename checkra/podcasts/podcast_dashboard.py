@@ -36,13 +36,13 @@ def init_dashboard(server):
             data = dumps(list(collection.find({"guest":speakers[0]})))
         ),
         html.Div([
-            html.H5(children=
-                "Choose a name to explore the person's podcast",
-                style={'text-align':'center', 'padding-bottom':'10px'}
+            html.H3(children=
+                "Choose a name to explore the Person's Podcast",
+                style={'text-align':'center', 'padding-bottom':'20px'}
             ),
             html.P(children=
                 "Currently supporting podcasts by Lex Fridman",
-                style={'text-align':'center', 'padding-bottom':'10px'}
+                style={'text-align':'center'}
             ),
             html.Div([
                 dcc.Dropdown(
@@ -56,32 +56,49 @@ def init_dashboard(server):
         ]),
         
         html.Div([
-            html.Div([
-                dcc.Graph(
-                id = "timestamps", 
-                clear_on_unhover = True,
-                config=dict(displayModeBar=False) #disable mode bar
-            )],style={"display":"inline-block"}),
-            html.Div([
-                dcc.Slider(
-                    id='sentence-slider',
-                    min=1,
-                    max=10,
-                    value=1,
-                    marks={str(number+1): str(number+1) for number in np.arange(10)},
-                    step=None
-                ),
-                html.P(
-                id = "podcast_result"
-            )],style={"display":"inline-block"})
             
-        ]),
+            html.Div([
+                html.Div([
+                    html.H5(children="Topic Breakdown", style={"text-align":"center"}),
+                    html.P(children="Hover over a section for a summary of that subtopic",style={"text-align":"center"})
+                ]),
+                html.Div([
+                    dcc.Graph(
+                        id = "timestamps", 
+                        clear_on_unhover = True,
+                        config=dict(displayModeBar=False) #disable mode bar
+                    )
+                ]) 
+            ],style={'width':"40%"}),
+            html.Br(),
+            html.Div([
+                html.Div([
+                    html.H5(id = "summary", style={"text-align":"center"}),
+                    html.P(children = "Adjust slider to control number of sentences in sumamry", style={"text-align":"center"})
+                ]),
+                html.Div([
+                    dcc.Slider(
+                        id='sentence-slider',
+                        min=1,
+                        max=10,
+                        value=1,
+                        marks={str(number+1): str(number+1) for number in np.arange(10)},
+                        step=None
+                    ),
+                    html.P(
+                        id = "podcast_result"
+                    )
+                ])
+                
+            ]
+            )],style={'display':'flex'}
+        ),
+
         html.Div(
             id = "entities",
+            # className="three columns"
             style={'columnCount': 3}
         ) 
-
-
     ])
     init_callbacks(dash_app)
     return dash_app.server, dash_app
@@ -98,8 +115,13 @@ def init_callbacks(dash_app):
         sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
         top_confi= stamps_expanded(sent_count, word_count, stamps)
-
-        fig = go.Figure()
+        layout = go.Layout(
+            autosize=True,
+            height = 200
+            )
+        fig = go.Figure(
+            layout=layout
+        )
         for ind, topic in enumerate(top_confi):
             fig.add_trace(go.Scatter(x=np.arange(sent_count), y=topic, fill='tozeroy'))
         
@@ -110,7 +132,7 @@ def init_callbacks(dash_app):
             overwrite=True, 
             showlegend=False, 
             plot_bgcolor="white", 
-            # margin=dict(t=10,l=10,b=10,r=50),
+            margin=dict(t=0),
             hovermode="x unified" #TODO Edit to only show top 
         )
         
@@ -118,22 +140,23 @@ def init_callbacks(dash_app):
 
     @dash_app.callback(
         Output('podcast_result', 'children'),
+        Output('summary','children'),
         Input('timestamps', 'hoverData'),
         Input('data-store', 'children'),
         Input('sentence-slider', 'value'),
         prevent_initial_call=True
     )
-    def update_summary(hoverData, data, slider):
+    def update_summary(hoverData, data, slider=3):
         try:
             data = json.loads(data)
             if not hoverData:
-                return str(" ".join(data["summary"][:slider]))
+                return str(" ".join(data["summary"][:slider])), "Main Summary"
             else:
                 for i in hoverData["points"]:
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                return str(" ".join(data["subtopics"][topic][:slider]))
+                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic)+" Summary")
         except:
             pass
     @dash_app.callback(
@@ -145,13 +168,12 @@ def init_callbacks(dash_app):
         children = []
         for key in sorted(data["traits"].keys()):
             if len(data["traits"][key])>1 and key!="Topics": 
-                div = html.Div(
-                    children = [
-                        html.H1(key), 
+                div = html.Div([
+                        html.H5(key, style={"text-align":"center"}), 
                         dcc.Textarea(
                             value = "\n".join(data["traits"][key]),
-                            # contentEditable=False
-                            disabled=True
+                            disabled=True,
+                            style={'width':'100%', 'height':'200px'}
                             
                         )]
                 )
