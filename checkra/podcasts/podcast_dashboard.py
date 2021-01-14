@@ -70,7 +70,6 @@ def init_dashboard(server):
                     )
                 ]) 
             ],style={'width':"40%"}),
-            html.Br(),
             html.Div([
                 html.Div([
                     html.H5(id = "summary", style={"text-align":"center"}),
@@ -96,7 +95,6 @@ def init_dashboard(server):
 
         html.Div(
             id = "entities",
-            # className="three columns"
             style={'columnCount': 3}
         ) 
     ])
@@ -123,7 +121,7 @@ def init_callbacks(dash_app):
             layout=layout
         )
         for ind, topic in enumerate(top_confi):
-            fig.add_trace(go.Scatter(x=np.arange(sent_count), y=topic, fill='tozeroy'))
+            fig.add_trace(go.Scatter(x=np.arange(sent_count), y=topic, fill='tozeroy', hoverinfo='none', hovertemplate= None))
         
         fig.update_xaxes(visible=False)
         fig.update_yaxes(visible=False, fixedrange=True, range=[.1,1])
@@ -132,8 +130,8 @@ def init_callbacks(dash_app):
             overwrite=True, 
             showlegend=False, 
             plot_bgcolor="white", 
-            margin=dict(t=0),
-            hovermode="x unified" #TODO Edit to only show top 
+            margin=dict(t=0, l=20, r=20, b=20),
+            hovermode="x"
         )
         
         return dumps(info[0]), fig
@@ -156,7 +154,7 @@ def init_callbacks(dash_app):
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic)+" Summary")
+                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic+1)+" Summary")
         except:
             pass
     @dash_app.callback(
@@ -173,8 +171,7 @@ def init_callbacks(dash_app):
                         dcc.Textarea(
                             value = "\n".join(data["traits"][key]),
                             disabled=True,
-                            style={'width':'100%', 'height':'200px'}
-                            
+                            style={'width':'100%', 'height':'200px', 'text-align':'center'}
                         )]
                 )
                 children.append(div)
@@ -185,12 +182,15 @@ def stamps_expanded(sent_count, word_count, stamps):
     top_confi =[]
     i = 0
     while i<len(stamps)-1:#set section of of final topics equal to corressponding timestamp
+        print(stamps)
         arr = np.zeros(sent_count)
-        arr[stamps[i][0]:stamps[i+1][0]] = stamps[i][1] 
+        arr[stamps[i][0]:stamps[i+1][0]] = i+1 
         top_confi.append(arr)
         i+=1
     arr = np.zeros(sent_count)
-    arr[stamps[-1][0]:] = stamps[-1][1]
+    arr[stamps[-1][0]:] = i+1
     top_confi.append(arr)
     
     return top_confi
+
+# def find_topic(stamps, i)
