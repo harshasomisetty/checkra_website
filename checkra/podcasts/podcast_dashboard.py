@@ -2,8 +2,8 @@ import json
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-# import dash_cytoscape as cyto
 from dash.dependencies import Input, Output
+from bson.json_util import dumps
 import dash_table
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ import math
 from flask import redirect, url_for, render_template, request, Markup, Blueprint
 from ..extensions import mongo
 import plotly.express as px
+import plotly.graph_objects as go
 import os
 from ..podcasts import podcasts
 
@@ -25,10 +26,14 @@ def init_dashboard(server):
             'https://codepen.io/chriddyp/pen/bWLwgP.css'
         ],
     )
+    #TODO add links from single podcasts to entity graphs
 
     speakers = sorted([pod["guest"] for pod in list(collection.find({},{"_id":0,"guest":1}))])
     # print(speakers)
     dash_app.layout = html.Div([
+       dcc.Store(
+            id = 'data-store'
+        ),
         html.H5(children=
             "Choose a name to explore the person's podcast",
             style={'text-align':'center', 'padding-bottom':'10px'}
@@ -45,14 +50,22 @@ def init_dashboard(server):
                 ],
                 value=speakers[0]
             )
-        ], style={'width':'300px', 'margin':'auto'}),
+        ], style={'width':'300px', 'margin':'auto', 'padding-bottom':'30px'}),
         html.Div([
-            html.P(
+            html.Div([
+                dcc.Graph(
+                id="timestamps", 
+                clear_on_unhover = True,
+                config=dict(displayModeBar=False) #disable mode bar
+                )
+            ],style={"display":"inline-block"}),
+            html.Div([
+                html.P(
                 id = "podcast_result"
+            )],style={"display":"inline-block"})
+            
+        ], className="row"),
 
-            ),
-            dcc.Graph(id="timestamps")
-        ])
 
     ])
     init_callbacks(dash_app)
@@ -62,41 +75,67 @@ def init_callbacks(dash_app):
 
     @dash_app.callback(#update available entities for a category
         # Output('available_entities', 'options'),
-        Output('podcast_result', 'children'),
+        Output('data-store', 'children'),
+        # Output('podcast_result','children'),
         Output('timestamps','figure'),
         Input('speakers', 'value')
     )
     def update_podcast(guest_name):
-        # return str()
-        info = list(collection.find({"guest":guest_name},{'guest':1,"stamps":1,"sent_count":1, "word_count":1,"_id":0}))
-        # print(list(info)[0]["sent_count"])
-        sent_count = info[0]["sent_count"]
-        word_count = info[0]["word_count"]
-        stamps = info[0]["stamps"]
+        info = list(collection.find({"guest":guest_name}))
+        sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
-        final_topic_confi = stamps_expanded(stamps, sent_count)
-        top_confi = np.zeros([int(math.log(word_count)), sent_count]) #2d array of confidences for each topic
-        x_vals = np.arange(sent_count)
-        # df = pd.DataFrame(top_confi)
-        for ind, i in enumerate(final_topic_confi): #set graph
-            top_confi[int(i)][ind] = .8
-        fig = px.line(x=x_vals, y=[topic for topic in top_confi])
-        # print(df)
-        return str(sent_count)+" "+str(word_count)+" "+str(len(top_confi)), fig
+        top_confi= stamps_expanded(sent_count, word_count, stamps)
 
-        # print(stamps.keys())
-        # ret_string = ""
-        # print(type(name))
-        # for key in name:
-        #     print(type(key))
-        # return str(name)
+        fig = go.Figure()
+        for ind, topic in enumerate(top_confi):
+            fig.add_trace(go.Scatter(x=np.arange(sent_count), y=topic, fill='tozeroy'))
+        
+        fig.update_xaxes(visible=False)
+        fig.update_yaxes(visible=False, fixedrange=True, range=[.1,1])
+        fig.update_layout(
+            annotations=[], 
+            overwrite=True, 
+            showlegend=False, 
+            plot_bgcolor="white", 
+            margin=dict(t=10,l=10,b=10,r=50),
+            hovermode="x unified" #TODO Edit to only show top 
+        )
+        # print(info)
+        
+        return dumps(info[0]), fig
+
+    @dash_app.callback(
+        Output('podcast_result', 'children'),
+        Input('timestamps', 'hoverData'),
+        Input('data-store', 'children'),
+        prevent_initial_call=True
+    )
+    def update_summary(hoverData, data):
+        try:
+            data = json.loads(data)
+            if not hoverData:
+                return str(data["summary"])
+            else:
+                for i in hoverData["points"]:
+                    if i["y"]!=0:
+                        topic = i["curveNumber"]
+                        break
+                return str(data["subtopics"][topic])
+        except:
+            pass
+        
 
 
-def stamps_expanded(stamps, sent_count):
-    final_topic_confi = np.empty(sent_count)
+def stamps_expanded(sent_count, word_count, stamps):
+    top_confi =[]
     i = 0
     while i<len(stamps)-1:#set section of of final topics equal to corressponding timestamp
-        final_topic_confi[stamps[i][0]:stamps[i+1][0]] = stamps[i][1] 
+        arr = np.zeros(sent_count)
+        arr[stamps[i][0]:stamps[i+1][0]] = stamps[i][1] 
+        top_confi.append(arr)
         i+=1
-    final_topic_confi[stamps[-1][0]:] = stamps[-1][1]
-    return final_topic_confi
+    arr = np.zeros(sent_count)
+    arr[stamps[-1][0]:] = stamps[-1][1]
+    top_confi.append(arr)
+    
+    return top_confi
