@@ -56,9 +56,10 @@ def init_dashboard(server):
                     options = [
                         {'label': ent, 'value': ent} for ent in speakers
                     ],
-                    value=speakers[0]
+                    value=speakers[0],
+                    style={'text-align':'center'}
                 )
-            ], style={'width':'300px', 'margin':'auto'}),
+            ], style={'width':'250px', 'margin':'auto'}),
         ]),
         html.Hr(),
         html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'10px'}),
@@ -94,7 +95,7 @@ def init_dashboard(server):
                         html.P(children="Click a Colored Sub-Section for a Mini-Summary",style={"text-align":"center"})
                     ]),
                     html.Div([
-                        html.Button("Or Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'}, className="btn btn-outline-dark")
+                        html.Button("Or Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'}, className="btn btn-outline-dark btn-sm")
                     ], style={'margin':'auto','display':'flex', 'justify-content':'space-evenly', 'padding-bottom':'5px'}),
                     html.P(id="subtopic-hover",style={'text-align':'center'}),
                     html.Div([
@@ -200,7 +201,7 @@ def init_callbacks(dash_app):
         Input('summary-id', 'children')
     )
     def update_wordcloud(data, topic):
-        build_wordcloud = lambda summary: WordCloud(background_color="white", height=250).generate(summary).to_image()
+        build_wordcloud = lambda summary: WordCloud(background_color="white", height=255).generate(summary).to_image()
         data = json.loads(data)
         if topic == -1:
             return build_wordcloud(" ".join(data["summary"])), "Full Podcast Wordcloud"
