@@ -71,7 +71,8 @@ def init_dashboard(server):
                         step=None
                     ),
                     html.P(
-                        id = "summary-result"
+                        id = "summary-result",
+                        style={'text-align':'center'}
                     )
                 ])
             ], style={'width':'30%'}),
@@ -98,14 +99,14 @@ def init_dashboard(server):
 
             html.Div([
                 html.H5(id="wordcloud-title", style={'text-align':'center'}),
-                html.P(children="Visualized Topics", style={'text-align':'center'}),
+                html.P(children="Automatic Topic Visualization", style={'text-align':'center'}),
                 html.Img(id="wordcloud")
             ],style={'width':"30%"}),
         ],style={'display':'flex', 'justify-content':'space-between'}),
-
+        html.H4("Mentioned Entities", style={'padding-top':'15px','text-align':'center'}),
         html.Div(
             id = "entities",
-            style={'columnCount': 3}
+            style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}
         ) 
     ])
     init_callbacks(dash_app)
@@ -114,12 +115,13 @@ def init_dashboard(server):
 def init_callbacks(dash_app):
 
     @dash_app.callback(#update available entities for a category
-        Output('data-store', 'children'),
+        Output('data-store', 'data'),
         Output('timestamps','figure'),
         Output('podcast-title','children'),
         Input('speakers', 'value')
     )
     def update_podcast(guest_name):
+        print("start")
         info = list(collection.find({"guest":guest_name}))
         sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
@@ -153,7 +155,7 @@ def init_callbacks(dash_app):
         Output('wordcloud', 'src'),
         Output('wordcloud-title', 'children'),
         Input('timestamps', 'clickData'),
-        Input('data-store', 'children'),
+        Input('data-store', 'data'),
         Input('sentence-slider', 'value'),
         prevent_initial_call=True
     )
@@ -177,7 +179,7 @@ def init_callbacks(dash_app):
     @dash_app.callback(
         Output('subtopic-hover','children'),
         Input('timestamps','hoverData'),
-        Input('data-store','children')
+        Input('data-store','data')
     )
     def subtopic_label_update(hoverData,data):
         try:
@@ -212,18 +214,20 @@ def init_callbacks(dash_app):
         Input('data-store','data')
     )
     def update_entity_views(data):
-        data = json.loads(data)[0]
+        data = json.loads(data)
+        print(type(data))
+        print("yes")
         children = []
         for key in sorted(data["traits"].keys()):
-            if len(data["traits"][key])>1 and key!="Topics": 
+            if len(data["traits"][key])>1 and key!="Topics" and key!="All Entities": 
                 div = html.Div([
-                        html.H5(key, style={"text-align":"center"}), 
+                        html.H5(key, style={"text-align":"center", 'padding-top':'5px'}), 
                         dcc.Textarea(
                             value = "\n".join(data["traits"][key]),
                             disabled=True,
                             draggable=False,
-                            style={'width':'100%', 'height':'200px', 'text-align':'center'}
-                        )]
+                            style={'width':'100%', 'height':'250px', 'text-align':'center'}
+                        )], style={'width':'400px'}
                 )
                 children.append(div)
 
@@ -244,4 +248,4 @@ def stamps_expanded(sent_count, word_count, stamps): #expand initial stamps into
     return top_confi
 
 def build_wordcloud(summary): #generate image of wordcloud
-    return WordCloud(background_color="white").generate(summary).to_image()
+    return WordCloud(background_color="white", height=240).generate(summary).to_image()
