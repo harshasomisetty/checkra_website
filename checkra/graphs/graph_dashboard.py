@@ -54,11 +54,11 @@ def init_dashboard(server):
                         style = {'text-align':'center'}
                     )
                 ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
-            ], style={'margin':'auto', 'width':'600px', 'padding-bottom':'60px'}
+            ], style={'margin':'auto', 'width':'600px'}
         ),
-        
+        html.Hr(), 
         html.Div(children=[ #graph display
-            html.H5(id = "cytoscape-title", style={"text-align":"center"}),
+            html.H4(id = "cytoscape-title", style={"text-align":"center"}),
             cyto.Cytoscape(
                 id='cytoscape-mentions',
                 layout={'name': 'concentric', 'componentSpacing':200},

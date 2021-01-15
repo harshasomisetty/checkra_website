@@ -17,6 +17,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import matplotlib
 import io
+import time
 matplotlib.use("agg")
 
 collection = mongo.db.lex
@@ -44,7 +45,12 @@ def init_dashboard(server):
                 "Choose a Name to Explore the Podcast",
                 style={'text-align':'center', 'padding-bottom':'5px'}
             ),
+            html.P(children=
+                "Dropdown of Speakers",
+                style={'text-align':'center', 'padding-bottom':'5px'}
+            ),
             html.Div([
+                
                 dcc.Dropdown(
                     id = "speakers",
                     options = [
@@ -52,14 +58,16 @@ def init_dashboard(server):
                     ],
                     value=speakers[0]
                 )
-            ], style={'width':'300px', 'margin':'auto', 'padding-bottom':'10px'}),
+            ], style={'width':'300px', 'margin':'auto'}),
         ]),
-        html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'40px'}),
+        html.Hr(),
+        html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'10px'}),
+        
         html.Div([
             html.Div([
                 html.Div([
                     html.H5(id = "summary-title", style={"text-align":"center"}),
-                    html.P(children = "Adjust Number of Sentences in Summary", style={"text-align":"center"})
+                    html.P(children = "Adjust Slider for Number of Sentences in Summary", style={"text-align":"center"})
                 ]),
                 html.Div([
                     dcc.Slider(
@@ -70,14 +78,13 @@ def init_dashboard(server):
                         marks={str(number+1): str(number+1) for number in np.arange(10)},
                         step=None
                     ),
+                    
                     html.P(
                         id = "summary-result",
                         style={'text-align':'center'}
                     ),
-                    # html.Div(
-                    #     id = 'summary-id',
-                    #     style={'display':'none'}
-                    # )
+
+                    html.Div(id = 'summary-id', style={'display':'none'})
                 ])
             ], style={'width':'30%'}),
             html.Div([
@@ -87,7 +94,7 @@ def init_dashboard(server):
                         html.P(children="Click a Colored Sub-Section for a Mini-Summary",style={"text-align":"center"})
                     ]),
                     html.Div([
-                        html.Button("Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'})
+                        html.Button("Or Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'}, className="btn btn-outline-dark")
                     ], style={'margin':'auto','display':'flex', 'justify-content':'space-evenly', 'padding-bottom':'5px'}),
                     html.P(id="subtopic-hover",style={'text-align':'center'}),
                     html.Div([
@@ -101,14 +108,22 @@ def init_dashboard(server):
                 ],style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
  
             ],style={'width':"40%"}),
-
+            
             html.Div([
                 html.H5(id="wordcloud-title", style={'text-align':'center'}),
                 html.P(children="Automatic Topic Visualization", style={'text-align':'center'}),
-                html.Img(id="wordcloud")
+                dcc.Loading(
+                    id = 'wordcloud-loading',
+                    type='graph',
+                    children=[
+                        html.Img(id="wordcloud")
+                    ]
+                )
             ],style={'width':"30%"}),
         ],style={'display':'flex', 'justify-content':'space-between'}),
-        html.H4("Mentioned Entities", style={'padding-top':'15px','text-align':'center'}),
+        html.Hr(),
+        html.H4("Mentioned Entities", style={'text-align':'center'}),
+        html.P("Browse the entities mentioned in this source, and head over to Entity Graphs to see who else mentioned the same entity"),
         html.Div(
             id = "entities",
             style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}
@@ -156,8 +171,7 @@ def init_callbacks(dash_app):
     @dash_app.callback( #Change loaded summary and wordcloud when clicking on reset button or subtopics
         Output('summary-result', 'children'),
         Output('summary-title','children'),
-        Output('wordcloud', 'src'),
-        Output('wordcloud-title', 'children'),
+        Output('summary-id', 'children'),
         Input('timestamps', 'clickData'),
         Input('data-store', 'data'),
         Input('sentence-slider', 'value'),
@@ -165,22 +179,34 @@ def init_callbacks(dash_app):
         prevent_initial_call=True
     )
     def update_summary(clickData, data, slider, n_clicks):
-        build_wordcloud = lambda summary: WordCloud(background_color="white", height=250).generate(summary).to_image()
 
         try:
             data = json.loads(data)
             changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
             if not clickData or 'reset-summary' in changed_id:
-                return str(" ".join(data["summary"][:slider])), "Full Podcast Summary", build_wordcloud(" ".join(data["summary"])), "Full Podcast Wordcloud"
+                return str(" ".join(data["summary"][:slider])), "Full Podcast Summary", -1
             else:
                 for i in clickData["points"]:
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic+1)+" Summary"), build_wordcloud(" ".join(data["subtopics"][topic])), str("Subtopic "+str(topic+1)+" Wordcloud")
+                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic+1)+" Summary"), topic
         except:
             pass
-    
+    @dash_app.callback(
+        Output('wordcloud', 'src'),
+        Output('wordcloud-title', 'children'),
+        Input('data-store', 'data'),
+        Input('summary-id', 'children')
+    )
+    def update_wordcloud(data, topic):
+        build_wordcloud = lambda summary: WordCloud(background_color="white", height=250).generate(summary).to_image()
+        data = json.loads(data)
+        if topic == -1:
+            return build_wordcloud(" ".join(data["summary"])), "Full Podcast Wordcloud"
+        else:
+            return build_wordcloud(" ".join(data["subtopics"][topic])), str("Subtopic "+str(topic+1)+" Wordcloud")
+
     @dash_app.callback( #change label when hovering over subtopics
         Output('subtopic-hover','children'),
         Input('timestamps','hoverData'),
