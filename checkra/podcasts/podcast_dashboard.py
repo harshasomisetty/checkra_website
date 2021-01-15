@@ -73,7 +73,11 @@ def init_dashboard(server):
                     html.P(
                         id = "summary-result",
                         style={'text-align':'center'}
-                    )
+                    ),
+                    # html.Div(
+                    #     id = 'summary-id',
+                    #     style={'display':'none'}
+                    # )
                 ])
             ], style={'width':'30%'}),
             html.Div([
@@ -83,16 +87,17 @@ def init_dashboard(server):
                         html.P(children="Click a Colored Sub-Section for a Mini-Summary",style={"text-align":"center"})
                     ]),
                     html.Div([
-                        # html.P(id="subtopic-hover",children="Current: None"),
-                        html.Button(children="Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'})
-                    ], style={'margin':'auto','display':'flex', 'justify-content':'space-evenly','padding-bottom':'10px'}),
+                        html.Button("Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'})
+                    ], style={'margin':'auto','display':'flex', 'justify-content':'space-evenly', 'padding-bottom':'5px'}),
+                    html.P(id="subtopic-hover",style={'text-align':'center'}),
                     html.Div([
                         dcc.Graph(
                             id = "timestamps", 
                             clear_on_unhover = True,
                             config=dict(displayModeBar=False), #disable mode bar
                         )
-                    ], style={'width':"100%", 'margin':'auto'})
+                    ], style={'width':"100%", 'margin':'auto'}),
+                    
                 ],style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
  
             ],style={'width':"40%"}),
@@ -121,7 +126,6 @@ def init_callbacks(dash_app):
         Input('speakers', 'value')
     )
     def update_podcast(guest_name):
-        print("start")
         info = list(collection.find({"guest":guest_name}))
         sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
@@ -149,7 +153,7 @@ def init_callbacks(dash_app):
         
         return dumps(info[0]), fig, str(info[0]["guest"]+" and "+ info[0]["host"]+": "+info[0]["title"])
 
-    @dash_app.callback( #hovering over subtopics
+    @dash_app.callback( #Change loaded summary and wordcloud when clicking on reset button or subtopics
         Output('summary-result', 'children'),
         Output('summary-title','children'),
         Output('wordcloud', 'src'),
@@ -157,66 +161,51 @@ def init_callbacks(dash_app):
         Input('timestamps', 'clickData'),
         Input('data-store', 'data'),
         Input('sentence-slider', 'value'),
+        Input('reset-summary', 'n_clicks'),
         prevent_initial_call=True
     )
-    def update_summary(clickData, data, slider=3):
+    def update_summary(clickData, data, slider, n_clicks):
+        build_wordcloud = lambda summary: WordCloud(background_color="white", height=250).generate(summary).to_image()
+
         try:
             data = json.loads(data)
-            
-            if not clickData:
-                # build_word_cloud(" ".join(data["summary"])) 
+            changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+            if not clickData or 'reset-summary' in changed_id:
                 return str(" ".join(data["summary"][:slider])), "Full Podcast Summary", build_wordcloud(" ".join(data["summary"])), "Full Podcast Wordcloud"
             else:
                 for i in clickData["points"]:
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                # build_word_cloud(" ".join(data["subtopics"][topic]))
                 return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic+1)+" Summary"), build_wordcloud(" ".join(data["subtopics"][topic])), str("Subtopic "+str(topic+1)+" Wordcloud")
         except:
-            print("off")
             pass
-    @dash_app.callback(
+    
+    @dash_app.callback( #change label when hovering over subtopics
         Output('subtopic-hover','children'),
         Input('timestamps','hoverData'),
         Input('data-store','data')
     )
-    def subtopic_label_update(hoverData,data):
+    def subtopic_label_update(hoverData,data): #dynamically change label when hovering
         try:
             data = json.loads(data)
-            for i in hoverData["points"]:
-                if i["y"]!=0:
-                    topic = i["curveNumber"]
-                    break
-            return str("Current: Subtopic "+str(topic+1))
+            if not hoverData:
+                return "Currently on Full Podcast"
+            else:
+                for i in hoverData["points"]:
+                    if i["y"]!=0:
+                        topic = i["curveNumber"]
+                        break
+                return str("Current on Subtopic "+str(topic+1))
         except:
             pass
-        
-    # @dash_app.callback( #hovering over subtopics
-    #     Output('summary-result', 'children'),
-    #     Output('summary-title','children'),
-    #     Output('wordcloud', 'src'),
-    #     Input('reset-summary', 'n_clicks'),
-    #     Input('data-store', 'children'),
-    #     Input('sentence-slider', 'value'),
-    #     prevent_initial_call=True
-    # )
-    # def reset_summary(click, data, slider=3):
-    #     try:
-    #         data = json.loads(data)
-    #         return str(" ".join(data["summary"][:slider])), "Main Summary", build_wordcloud(" ".join(data["summary"])), "Main Wordcloud"
 
-    #     except:
-    #         pass
-
-    @dash_app.callback( #update all entities from stored data on a new podcast
+    @dash_app.callback( #update all entities textareas when loading new podcast
         Output('entities', 'children'),
         Input('data-store','data')
     )
     def update_entity_views(data):
         data = json.loads(data)
-        print(type(data))
-        print("yes")
         children = []
         for key in sorted(data["traits"].keys()):
             if len(data["traits"][key])>1 and key!="Topics" and key!="All Entities": 
@@ -233,6 +222,8 @@ def init_callbacks(dash_app):
 
         return children
 
+
+
 def stamps_expanded(sent_count, word_count, stamps): #expand initial stamps into multiple topic arrays
     top_confi =[]
     i = 0
@@ -246,6 +237,3 @@ def stamps_expanded(sent_count, word_count, stamps): #expand initial stamps into
     top_confi.append(arr)
     
     return top_confi
-
-def build_wordcloud(summary): #generate image of wordcloud
-    return WordCloud(background_color="white", height=240).generate(summary).to_image()
