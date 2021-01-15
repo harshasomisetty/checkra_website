@@ -13,7 +13,11 @@ from ..extensions import mongo
 import plotly.express as px
 import plotly.graph_objects as go
 import os
-from ..podcasts import podcasts
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+import matplotlib
+import io
+matplotlib.use("agg")
 
 collection = mongo.db.lex
 
@@ -21,7 +25,7 @@ def init_dashboard(server):
     """Create a Plotly Dash dashboard."""
     dash_app = dash.Dash(
         server=server,
-        routes_pathname_prefix="/podcasts2dash/",
+        routes_pathname_prefix="/podcastsdash/",
         external_stylesheets=[
             'https://codepen.io/chriddyp/pen/bWLwgP.css'
         ],
@@ -37,12 +41,8 @@ def init_dashboard(server):
         ),
         html.Div([
             html.H3(children=
-                "Choose a name to explore the Person's Podcast",
-                style={'text-align':'center', 'padding-bottom':'20px'}
-            ),
-            html.P(children=
-                "Currently supporting podcasts by Lex Fridman",
-                style={'text-align':'center'}
+                "Choose a Name to Explore the Podcast",
+                style={'text-align':'center', 'padding-bottom':'5px'}
             ),
             html.Div([
                 dcc.Dropdown(
@@ -52,28 +52,14 @@ def init_dashboard(server):
                     ],
                     value=speakers[0]
                 )
-            ], style={'width':'300px', 'margin':'auto', 'padding-bottom':'30px'}),
+            ], style={'width':'300px', 'margin':'auto', 'padding-bottom':'10px'}),
         ]),
-        
+        html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'40px'}),
         html.Div([
-            
             html.Div([
                 html.Div([
-                    html.H5(children="Topic Breakdown", style={"text-align":"center"}),
-                    html.P(children="Hover over a section for a summary of that subtopic",style={"text-align":"center"})
-                ]),
-                html.Div([
-                    dcc.Graph(
-                        id = "timestamps", 
-                        clear_on_unhover = True,
-                        config=dict(displayModeBar=False) #disable mode bar
-                    )
-                ]) 
-            ],style={'width':"40%"}),
-            html.Div([
-                html.Div([
-                    html.H5(id = "summary", style={"text-align":"center"}),
-                    html.P(children = "Adjust slider to control number of sentences in sumamry", style={"text-align":"center"})
+                    html.H5(id = "summary-title", style={"text-align":"center"}),
+                    html.P(children = "Adjust Number of Sentences in Summary", style={"text-align":"center"})
                 ]),
                 html.Div([
                     dcc.Slider(
@@ -85,13 +71,37 @@ def init_dashboard(server):
                         step=None
                     ),
                     html.P(
-                        id = "podcast_result"
+                        id = "summary-result"
                     )
                 ])
-                
-            ]
-            )],style={'display':'flex'}
-        ),
+            ], style={'width':'30%'}),
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.H5(children="Topic Breakdown", style={"text-align":"center"}),
+                        html.P(children="Click a Colored Sub-Section for a Mini-Summary",style={"text-align":"center"})
+                    ]),
+                    html.Div([
+                        # html.P(id="subtopic-hover",children="Current: None"),
+                        html.Button(children="Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'})
+                    ], style={'margin':'auto','display':'flex', 'justify-content':'space-evenly','padding-bottom':'10px'}),
+                    html.Div([
+                        dcc.Graph(
+                            id = "timestamps", 
+                            clear_on_unhover = True,
+                            config=dict(displayModeBar=False), #disable mode bar
+                        )
+                    ], style={'width':"100%", 'margin':'auto'})
+                ],style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
+ 
+            ],style={'width':"40%"}),
+
+            html.Div([
+                html.H5(id="wordcloud-title", style={'text-align':'center'}),
+                html.P(children="Visualized Topics", style={'text-align':'center'}),
+                html.Img(id="wordcloud")
+            ],style={'width':"30%"}),
+        ],style={'display':'flex', 'justify-content':'space-between'}),
 
         html.Div(
             id = "entities",
@@ -106,6 +116,7 @@ def init_callbacks(dash_app):
     @dash_app.callback(#update available entities for a category
         Output('data-store', 'children'),
         Output('timestamps','figure'),
+        Output('podcast-title','children'),
         Input('speakers', 'value')
     )
     def update_podcast(guest_name):
@@ -134,34 +145,73 @@ def init_callbacks(dash_app):
             hovermode="x"
         )
         
-        return dumps(info[0]), fig
+        return dumps(info[0]), fig, str(info[0]["guest"]+" and "+ info[0]["host"]+": "+info[0]["title"])
 
-    @dash_app.callback(
-        Output('podcast_result', 'children'),
-        Output('summary','children'),
-        Input('timestamps', 'hoverData'),
+    @dash_app.callback( #hovering over subtopics
+        Output('summary-result', 'children'),
+        Output('summary-title','children'),
+        Output('wordcloud', 'src'),
+        Output('wordcloud-title', 'children'),
+        Input('timestamps', 'clickData'),
         Input('data-store', 'children'),
         Input('sentence-slider', 'value'),
         prevent_initial_call=True
     )
-    def update_summary(hoverData, data, slider=3):
+    def update_summary(clickData, data, slider=3):
         try:
             data = json.loads(data)
-            if not hoverData:
-                return str(" ".join(data["summary"][:slider])), "Main Summary"
+            
+            if not clickData:
+                # build_word_cloud(" ".join(data["summary"])) 
+                return str(" ".join(data["summary"][:slider])), "Full Podcast Summary", build_wordcloud(" ".join(data["summary"])), "Full Podcast Wordcloud"
             else:
-                for i in hoverData["points"]:
+                for i in clickData["points"]:
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic+1)+" Summary")
+                # build_word_cloud(" ".join(data["subtopics"][topic]))
+                return str(" ".join(data["subtopics"][topic][:slider])), str("Subtopic "+str(topic+1)+" Summary"), build_wordcloud(" ".join(data["subtopics"][topic])), str("Subtopic "+str(topic+1)+" Wordcloud")
         except:
+            print("off")
             pass
     @dash_app.callback(
+        Output('subtopic-hover','children'),
+        Input('timestamps','hoverData'),
+        Input('data-store','children')
+    )
+    def subtopic_label_update(hoverData,data):
+        try:
+            data = json.loads(data)
+            for i in hoverData["points"]:
+                if i["y"]!=0:
+                    topic = i["curveNumber"]
+                    break
+            return str("Current: Subtopic "+str(topic+1))
+        except:
+            pass
+        
+    # @dash_app.callback( #hovering over subtopics
+    #     Output('summary-result', 'children'),
+    #     Output('summary-title','children'),
+    #     Output('wordcloud', 'src'),
+    #     Input('reset-summary', 'n_clicks'),
+    #     Input('data-store', 'children'),
+    #     Input('sentence-slider', 'value'),
+    #     prevent_initial_call=True
+    # )
+    # def reset_summary(click, data, slider=3):
+    #     try:
+    #         data = json.loads(data)
+    #         return str(" ".join(data["summary"][:slider])), "Main Summary", build_wordcloud(" ".join(data["summary"])), "Main Wordcloud"
+
+    #     except:
+    #         pass
+
+    @dash_app.callback( #update all entities from stored data on a new podcast
         Output('entities', 'children'),
         Input('data-store','data')
     )
-    def add_entity_headers(data):
+    def update_entity_views(data):
         data = json.loads(data)[0]
         children = []
         for key in sorted(data["traits"].keys()):
@@ -171,6 +221,7 @@ def init_callbacks(dash_app):
                         dcc.Textarea(
                             value = "\n".join(data["traits"][key]),
                             disabled=True,
+                            draggable=False,
                             style={'width':'100%', 'height':'200px', 'text-align':'center'}
                         )]
                 )
@@ -178,11 +229,10 @@ def init_callbacks(dash_app):
 
         return children
 
-def stamps_expanded(sent_count, word_count, stamps):
+def stamps_expanded(sent_count, word_count, stamps): #expand initial stamps into multiple topic arrays
     top_confi =[]
     i = 0
     while i<len(stamps)-1:#set section of of final topics equal to corressponding timestamp
-        print(stamps)
         arr = np.zeros(sent_count)
         arr[stamps[i][0]:stamps[i+1][0]] = i+1 
         top_confi.append(arr)
@@ -193,4 +243,5 @@ def stamps_expanded(sent_count, word_count, stamps):
     
     return top_confi
 
-# def find_topic(stamps, i)
+def build_wordcloud(summary): #generate image of wordcloud
+    return WordCloud(background_color="white").generate(summary).to_image()

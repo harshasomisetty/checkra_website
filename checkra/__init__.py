@@ -8,16 +8,14 @@ from .extensions import mongo
 def create_app():
     """Create Flask application."""
     app = Flask(__name__, instance_relative_config=False)
-    app.config.from_object("config.DevelopmentConfig")
+    app.config.from_object("config.ProductionConfig")
     mongo.init_app(app)
 
     from .home import home
-    from .podcasts import podcasts
     
     with app.app_context():
 
         app.register_blueprint(home.home_bp)
-        app.register_blueprint(podcasts.podcasts_bp, url_prefix="/podcasts")
         
         from .graphs.graph_dashboard import init_dashboard
         app, graph_dashapp = init_dashboard(app)

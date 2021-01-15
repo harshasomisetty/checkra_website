@@ -12,7 +12,6 @@ from flask import redirect, url_for, render_template, request, Markup, Blueprint
 from ..extensions import mongo
 import plotly.express as px
 import os
-from ..podcasts import podcasts
 
 collection = mongo.db.lex
 
@@ -124,19 +123,20 @@ def init_callbacks(dash_app):
             elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
             elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
         return elements, 'Mentions Graph of "'+str(value)+'"'
+    #TODO redo callbacks to podcast breakdowns
     
-    @dash_app.callback( #redirect to podcast breakdown
-        Output('cytoscape-tapNodeData-output', 'children'),
-        Input('cytoscape-mentions', 'tapNodeData')\
-    )
-    def displayTapNodeData(data):
-        try:
-            if data["type"] !="initial":
-                info = list(collection.find({"guest":data["label"]}))[0]
-                url = "/podcasts/"+info["guest"]
-                return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
-        except:
-            pass
+    # @dash_app.callback( #redirect to podcast breakdown
+    #     Output('cytoscape-tapNodeData-output', 'children'),
+    #     Input('cytoscape-mentions', 'tapNodeData')\
+    # )
+    # def displayTapNodeData(data):
+    #     try:
+    #         if data["type"] !="initial":
+    #             info = list(collection.find({"guest":data["label"]}))[0]
+    #             url = "/podcasts/"+info["guest"]
+    #             return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
+    #     except:
+    #         pass
     
     @dash_app.callback( #display side title
         Output('cytoscape-mouseoverNodeData-output', 'children'),

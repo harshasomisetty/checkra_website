@@ -12,10 +12,10 @@ def entity_graphs():
     footer = BeautifulSoup(graphs_app.index(),"html.parser").footer
     return render_template('graphs.html', title='Entity Graphs', footer=footer)
 
-@app.route('/podcasts2/', methods=["GET","POST"]) #embed dash view in flask
+@app.route('/podcasts/', methods=["GET","POST"]) #embed dash view in flask
 def single_podcasts():
     footer = BeautifulSoup(podcasts_app.index(),"html.parser").footer
-    return render_template('podcasts2.html', title='Single Podcasts', footer=footer)
+    return render_template('podcasts.html', title='Single Podcasts', footer=footer)
 
 @app.errorhandler(404)
 def page_not_found(e):
