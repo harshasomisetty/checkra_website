@@ -20,7 +20,7 @@ import io
 import time
 matplotlib.use("agg")
 
-collection = mongo.db.test
+collection = mongo.db.lex
 
 def init_dashboard(server):
     """Create a Plotly Dash dashboard."""
@@ -42,13 +42,24 @@ def init_dashboard(server):
         ),
         html.Div([
             html.H3(children=
-                "Choose a Name to Explore the Podcast",
+                "Podcast Breakdowns",
                 style={'text-align':'center', 'padding-bottom':'5px'}
             ),
             html.P(children=
-                "Dropdown of Speakers, Repeated Names Indicates Multiple Interviews",
+                "Breakdown includes an overall summary of most important sentences in a text, and summaries of subsections. The entire podcast and subsections can be visualized using the Wordcloud visualizer",
+                style={'text-align':'center'}
+            ),
+            html.P(children=
+                "The breakdown also includes a list of mentioned entities in the text. Head over to Entity graphs to see if any specific entity was mentioned by anyone else",
                 style={'text-align':'center', 'padding-bottom':'5px'}
             ),
+            html.P(children=
+                "Choose a name in the dropdown of speakers for a podcast breakdown (repeated names indicates multiple interviews)",
+                style={'text-align':'center',}
+            ),
+            
+                
+                
             html.Div([
                 
                 dcc.Dropdown(
@@ -102,7 +113,8 @@ def init_dashboard(server):
                         dcc.Graph(
                             id = "timestamps", 
                             clear_on_unhover = True,
-                            config=dict(displayModeBar=False), #disable mode bar
+                            config=dict(displayModeBar=False, autosizeable = False), #disable mode bar
+
                         )
                     ], style={'width':"100%", 'margin':'auto'}),
                     
@@ -134,7 +146,6 @@ def init_dashboard(server):
 
         html.Hr(),
         html.H4("Mentioned Entities", style={'text-align':'center'}),
-        html.P("Browse the entities mentioned in this source, and head over to Entity Graphs to see who else mentioned the same entity", style={'text-align':'center'}),
         html.Div(
             id = "entities",
             style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}
@@ -211,7 +222,7 @@ def init_callbacks(dash_app):
         Input('summary-id', 'children')
     )
     def update_wordcloud(data, topic):
-        build_wordcloud = lambda keywords: WordCloud(background_color="white", height=255).generate_from_frequencies(keywords).to_image()
+        build_wordcloud = lambda keywords: WordCloud(background_color="white", height=300).generate_from_frequencies(keywords).to_image()
         data = json.loads(data)
         # print()
         # return "test"
@@ -225,17 +236,17 @@ def init_callbacks(dash_app):
         Input('timestamps','hoverData'),
         Input('data-store','data')
     )
-    def subtopic_label_update(hoverData,data): #dynamically change label when hovering
+    def hoverlabel(hoverData,data): #dynamically change label when hovering
         try:
             data = json.loads(data)
             if not hoverData:
-                return "Full Podcast"
+                return "Full Podcast (not hovering on a section)"
             else:
                 for i in hoverData["points"]:
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                return str("Subtopic "+str(topic+1))
+                return str("Hovering on Subtopic "+str(topic+1))
         except:
             pass
 

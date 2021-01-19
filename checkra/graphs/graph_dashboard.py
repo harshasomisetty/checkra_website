@@ -13,7 +13,8 @@ from ..extensions import mongo
 import plotly.express as px
 import os
 
-collection = mongo.db.test
+collection = mongo.db.lex
+cyto.load_extra_layouts()
 
 def init_dashboard(server):
     """Create a Plotly Dash dashboard."""
@@ -31,7 +32,11 @@ def init_dashboard(server):
     ent_cats = sorted(list(collection.find_one({},{"traits":1, "_id":0})["traits"].keys()))#get all categories stored in mongo
     dash_app.layout = html.Div([
         html.H3(
-            children="Choose an Entity Category and Entity to see Mentions by Podcast Guests",
+            children="Entity Graphs",
+            style={'text-align':'center', 'padding-bottom':'20px'}
+        ),
+        html.P(
+            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. Popular Entities are Bitcoin or the Bible",
             style={'text-align':'center', 'padding-bottom':'20px'}
         ),
         html.Div(
@@ -51,7 +56,8 @@ def init_dashboard(server):
                     html.P(children = "Available Entities", style = {'text-align':'center'}),
                     dcc.Dropdown(
                         id = "available_entities",
-                        style = {'text-align':'center'}
+                        style = {'text-align':'center'},
+                        value = "Bitcoin"
                     )
                 ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
             ], style={'margin':'auto', 'width':'600px'}
@@ -59,11 +65,12 @@ def init_dashboard(server):
         html.Hr(), 
         html.Div(children=[ #graph display
             html.H4(id = "cytoscape-title", style={"text-align":"center"}),
+            html.P(children="The blue node is the selected entity, red nodes are the people who mentioned the blue node", style = {'text-align':'center'}),
             cyto.Cytoscape(
                 id='cytoscape-mentions',
-                layout={'name': 'concentric', 'componentSpacing':200},
+                layout={'name': 'cola', 'componentSpacing':200},
                 responsive=True,
-                style={'width': '60%', 'height': '600px', 'margin':'auto'},
+                style={'width': '60%', 'height': '900px', 'margin':'auto'},
                 stylesheet=[
                     {
                         'selector': 'node',

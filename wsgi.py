@@ -7,8 +7,6 @@ app, graphs_app, podcasts_app = create_app()
 
 @app.route('/graphs/', methods=["GET","POST"]) #embed dash view in flask
 def entity_graphs():
-    # with open("dash_html.txt", "w+") as w:
-    #     w.write(graphs_app.index())
     footer = BeautifulSoup(graphs_app.index(),"html.parser").footer
     return render_template('graphs.html', title='Entity Graphs', footer=footer)
 
@@ -19,7 +17,6 @@ def single_podcasts():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    # print("sdlkfjsd")
     return render_template('doesnotexist.html'), 404
 
 if __name__=="__main__":
