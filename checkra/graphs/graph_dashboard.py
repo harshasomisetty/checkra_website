@@ -13,7 +13,7 @@ from ..extensions import mongo
 import plotly.express as px
 import os
 
-collection = mongo.db.lex
+collection = mongo.db.test
 
 def init_dashboard(server):
     """Create a Plotly Dash dashboard."""

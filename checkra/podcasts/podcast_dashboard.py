@@ -20,7 +20,7 @@ import io
 import time
 matplotlib.use("agg")
 
-collection = mongo.db.lex
+collection = mongo.db.test
 
 def init_dashboard(server):
     """Create a Plotly Dash dashboard."""
@@ -46,7 +46,7 @@ def init_dashboard(server):
                 style={'text-align':'center', 'padding-bottom':'5px'}
             ),
             html.P(children=
-                "Dropdown of Speakers",
+                "Dropdown of Speakers, Repeated Names Indicates Multiple Interviews",
                 style={'text-align':'center', 'padding-bottom':'5px'}
             ),
             html.Div([
@@ -111,20 +111,30 @@ def init_dashboard(server):
             ],style={'width':"40%"}),
             
             html.Div([
-                html.H5(id="wordcloud-title", style={'text-align':'center'}),
-                html.P(children="Automatic Topic Visualization", style={'text-align':'center'}),
-                dcc.Loading(
-                    id = 'wordcloud-loading',
-                    type='graph',
-                    children=[
-                        html.Img(id="wordcloud")
-                    ]
-                )
+                html.Div([
+                    html.Div([
+                        html.H5(id="wordcloud-title", style={'text-align':'center'}),
+                        html.P(children="Automatic Topic Visualization", style={'text-align':'center'}),
+                    ]),
+                    html.Div([
+                        dcc.Loading(
+                            id = 'wordcloud-loading',
+                            type='circle',
+                            children=[
+                                html.Img(
+                                    id="wordcloud",
+                                    style={'margin':'auto'}
+                                )
+                            ]
+                        )
+                    ], style={'margin':'auto'})
+                ], style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
             ],style={'width':"30%"}),
         ],style={'display':'flex', 'justify-content':'space-between'}),
+
         html.Hr(),
         html.H4("Mentioned Entities", style={'text-align':'center'}),
-        html.P("Browse the entities mentioned in this source, and head over to Entity Graphs to see who else mentioned the same entity"),
+        html.P("Browse the entities mentioned in this source, and head over to Entity Graphs to see who else mentioned the same entity", style={'text-align':'center'}),
         html.Div(
             id = "entities",
             style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}
@@ -201,12 +211,14 @@ def init_callbacks(dash_app):
         Input('summary-id', 'children')
     )
     def update_wordcloud(data, topic):
-        build_wordcloud = lambda summary: WordCloud(background_color="white", height=255).generate(summary).to_image()
+        build_wordcloud = lambda keywords: WordCloud(background_color="white", height=255).generate_from_frequencies(keywords).to_image()
         data = json.loads(data)
+        # print()
+        # return "test"
         if topic == -1:
-            return build_wordcloud(" ".join(data["summary"])), "Full Podcast Wordcloud"
+            return build_wordcloud(dict(data["keywords"])), "Full Podcast Wordcloud"
         else:
-            return build_wordcloud(" ".join(data["subtopics"][topic])), str("Subtopic "+str(topic+1)+" Wordcloud")
+            return build_wordcloud(dict(data["subtopic_keywords"][topic])), str("Subtopic "+str(topic+1)+" Wordcloud")
 
     @dash_app.callback( #change label when hovering over subtopics
         Output('subtopic-hover','children'),
@@ -217,13 +229,13 @@ def init_callbacks(dash_app):
         try:
             data = json.loads(data)
             if not hoverData:
-                return "Currently on Full Podcast"
+                return "Full Podcast"
             else:
                 for i in hoverData["points"]:
                     if i["y"]!=0:
                         topic = i["curveNumber"]
                         break
-                return str("Current on Subtopic "+str(topic+1))
+                return str("Subtopic "+str(topic+1))
         except:
             pass
 
@@ -235,7 +247,7 @@ def init_callbacks(dash_app):
         data = json.loads(data)
         children = []
         for key in sorted(data["traits"].keys()):
-            if len(data["traits"][key])>1 and key!="Topics" and key!="All Entities": 
+            if len(data["traits"][key])>0 and key!="Topics" and "All" not in key: 
                 div = html.Div([
                         html.H5(key, style={"text-align":"center", 'padding-top':'5px'}), 
                         dcc.Textarea(
@@ -256,11 +268,11 @@ def stamps_expanded(sent_count, word_count, stamps): #expand initial stamps into
     i = 0
     while i<len(stamps)-1:#set section of of final topics equal to corressponding timestamp
         arr = np.zeros(sent_count)
-        arr[stamps[i][0]:stamps[i+1][0]] = i+1 
+        arr[stamps[i]:stamps[i+1]] = i+1 
         top_confi.append(arr)
         i+=1
     arr = np.zeros(sent_count)
-    arr[stamps[-1][0]:] = i+1
+    arr[stamps[-1]:] = i+1
     top_confi.append(arr)
     
     return top_confi
