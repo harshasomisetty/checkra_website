@@ -1,5 +1,5 @@
-"""Instantiate a Dash app."""
 import json
+from bson.json_util import dumps
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -13,7 +13,9 @@ from ..extensions import mongo
 import plotly.express as px
 import os
 
-collection = mongo.db.lex
+# collection = mongo.db.lex
+db = mongo.db
+collections = sorted([col for col in db.collection_names()])
 cyto.load_extra_layouts()
 
 def init_dashboard(server):
@@ -28,15 +30,17 @@ def init_dashboard(server):
 
     #TODO make graph nodes smaller, make edges further away
     
-    
-    ent_cats = sorted(list(collection.find_one({},{"traits":1, "_id":0})["traits"].keys()))#get all categories stored in mongo
+    ent_cats = sorted(list(db[collections[0]].find_one({},{"traits":1, "_id":0})["traits"].keys()))#get all categories stored in mongo
     dash_app.layout = html.Div([
+        dcc.Store(
+            id = 'data-store',
+        ),
         html.H3(
             children="Entity Graphs",
             style={'text-align':'center', 'padding-bottom':'20px'}
         ),
         html.P(
-            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. Popular Entities are Bitcoin or the Bible",
+            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. Popular Entities are 'Bitcoin' or the 'Bible'",
             style={'text-align':'center', 'padding-bottom':'20px'}
         ),
         html.Div(
@@ -69,7 +73,7 @@ def init_dashboard(server):
                 id='cytoscape-mentions',
                 layout={'name': 'cola', 'componentSpacing':200},
                 responsive=True,
-                style={'width': '60%', 'height': '900px', 'margin':'auto'},
+                style={'width': '80%', 'height': '900px', 'margin':'auto'},
                 stylesheet=[
                     {
                         'selector': 'node',
@@ -107,31 +111,55 @@ def init_callbacks(dash_app):
     @dash_app.callback(#update available entities for a category
         Output('available_entities', 'options'),
         Output('available_entities', 'value'),
+        Output('data-store', 'data'),
         Input('entity_category', 'value')
     )
     def update_entities(category):
         print(category)
-        queried = collection.find({},{"_id":0, "traits."+category:1})
-        filtered = list(set([ent for doc in queried for ent in doc["traits"][category]]))
+        all_docs = []
+        for collection in db.collection_names():
+            for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
+                all_docs.append(doc)
+        filtered = list(set([ent for doc in all_docs for ent in doc["traits"][category]]))
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
         sorted_options = sorted(options, key = lambda x:x["label"])
-        return sorted_options, sorted_options[0]['value']
+        return sorted_options, sorted_options[0]['value'], dumps(all_docs)
+
 
     @dash_app.callback( #update graph elements
         Output("cytoscape-mentions", "elements"),
         Output('cytoscape-title',"children"),
         Input('available_entities', 'value'),
-        Input('entity_category', 'value')
+        Input('entity_category', 'value'),
+        Input('data-store','data')
     )
-    def update_graph(value, category):
-        category = "traits."+category
+    def update_graph(value, category, data):
+        data = json.loads(data)
+        print(data[0])
+        collection = db[collections[0]]
+        category = category
         elements = [{'data':{"id":value, 'label':value, 'type':'initial'}, 'classes':'search'}]
-        for doc in collection.find({category:value},{"_id":0,"guest":1, "books":1}):
-            elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
-            elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
+        for ind, doc in enumerate(data):
+            if value in doc['traits'][category]:
+                elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
+                elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
+        
         return elements, 'Mentions Graph of "'+str(value)+'"'
     #TODO redo callbacks to podcast breakdowns
     
+
+    @dash_app.callback( #display side title
+        Output('cytoscape-mouseoverNodeData-output', 'children'),
+        Input('cytoscape-mentions', 'mouseoverNodeData')
+    )
+    def displayTapNodeData(data):
+        try:
+            if data["type"] !="initial":
+                title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
+                return str(data["label"]+"-"+title)
+        except:
+            pass
+
     # @dash_app.callback( #redirect to podcast breakdown
     #     Output('cytoscape-tapNodeData-output', 'children'),
     #     Input('cytoscape-mentions', 'tapNodeData')\
@@ -144,15 +172,3 @@ def init_callbacks(dash_app):
     #             return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
     #     except:
     #         pass
-    
-    @dash_app.callback( #display side title
-        Output('cytoscape-mouseoverNodeData-output', 'children'),
-        Input('cytoscape-mentions', 'mouseoverNodeData')
-    )
-    def displayTapNodeData(data):
-        try:
-            if data["type"] !="initial":
-                title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
-                return str(data["label"]+"-"+title)
-        except:
-            pass
