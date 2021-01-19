@@ -56,8 +56,7 @@ def init_dashboard(server):
                     html.P(children = "Available Entities", style = {'text-align':'center'}),
                     dcc.Dropdown(
                         id = "available_entities",
-                        style = {'text-align':'center'},
-                        value = "Bitcoin"
+                        style = {'text-align':'center'}
                     )
                 ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
             ], style={'margin':'auto', 'width':'600px'}
@@ -111,6 +110,7 @@ def init_callbacks(dash_app):
         Input('entity_category', 'value')
     )
     def update_entities(category):
+        print(category)
         queried = collection.find({},{"_id":0, "traits."+category:1})
         filtered = list(set([ent for doc in queried for ent in doc["traits"][category]]))
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown

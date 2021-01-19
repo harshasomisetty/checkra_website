@@ -2,7 +2,7 @@ import json
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from bson.json_util import dumps
 import dash_table
 import numpy as np
@@ -20,7 +20,7 @@ import io
 import time
 matplotlib.use("agg")
 
-collection = mongo.db.lex
+db = mongo.db
 
 def init_dashboard(server):
     """Create a Plotly Dash dashboard."""
@@ -32,13 +32,11 @@ def init_dashboard(server):
         ],
     )
     #TODO add links from single podcasts to entity graphs
-    initial_query = list(collection.find({},{"_id":0,"guest":1}))
-    speakers = sorted([pod["guest"] for pod in initial_query])
+    collections = sorted([col for col in db.collection_names()])
 
     dash_app.layout = html.Div([
         dcc.Store(
             id = 'data-store',
-            data = dumps(list(collection.find({"guest":speakers[0]})))
         ),
         html.Div([
             html.H3(children=
@@ -54,26 +52,35 @@ def init_dashboard(server):
                 style={'text-align':'center', 'padding-bottom':'5px'}
             ),
             html.P(children=
-                "Choose a name in the dropdown of speakers for a podcast breakdown (repeated names indicates multiple interviews)",
+                "Choose podcast on the left, and a name on the right for a podcast breakdown (repeated names indicates multiple interviews)",
                 style={'text-align':'center',}
             ),
             
-                
-                
             html.Div([
-                
+                dcc.Dropdown(
+                    id = "pod-library",
+                    options = [
+                        {'label':col,'value':col} for col in collections
+                    ],
+                    value = collections[0],
+                    style={'text-align':'center', 'width':'250px'}
+                ),
                 dcc.Dropdown(
                     id = "speakers",
-                    options = [
-                        {'label': ent, 'value': ent} for ent in speakers
-                    ],
-                    value=speakers[0],
-                    style={'text-align':'center'}
+                    # options = [
+                    #     {'label': ent, 'value': ent} for ent in speakers
+                    # ],
+                    # value=speakers[0],
+                    style={'text-align':'center', 'width':'500px'}
                 )
-            ], style={'width':'250px', 'margin':'auto'}),
+            ], style={'width':'70%','margin':'auto','display':'flex', 'flex-direction':'row', 'justify-content':'space-around'}),
         ]),
         html.Hr(),
         html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'10px'}),
+
+        # html.Div([
+        #     html.Button("Click to View HappyScribe Transcript", id="transcript-url", style={'text-align':'center', 'width':'300px'}, className="btn btn-outline-dark btn-sm")
+        # ],style={'display':'flex','justify-content':'center', 'padding-bottom':'30px'}),
         
         html.Div([
             html.Div([
@@ -98,7 +105,7 @@ def init_dashboard(server):
 
                     html.Div(id = 'summary-id', style={'display':'none'})
                 ])
-            ], style={'width':'30%'}),
+            ], style={'width':'400px'}),
             html.Div([
                 html.Div([
                     html.Div([
@@ -120,7 +127,7 @@ def init_dashboard(server):
                     
                 ],style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
  
-            ],style={'width':"40%"}),
+            ],style={'width':"400px"}),
             
             html.Div([
                 html.Div([
@@ -141,8 +148,8 @@ def init_dashboard(server):
                         )
                     ], style={'margin':'auto'})
                 ], style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
-            ],style={'width':"30%"}),
-        ],style={'display':'flex', 'justify-content':'space-between'}),
+            ],style={'width':"400px"}),
+        ],style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}),
 
         html.Hr(),
         html.H4("Mentioned Entities", style={'text-align':'center'}),
@@ -156,14 +163,29 @@ def init_dashboard(server):
 
 def init_callbacks(dash_app):
 
+    @dash_app.callback(
+        Output('speakers','options'),
+        Output('speakers','value'),
+        Input('pod-library','value')
+    )
+    def update_library(value):
+        docs = list(db[value].find({},{"guest":1}))
+        print("hi",value)
+        options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
+        return options, options[0]["value"] #, dumps(db[value].find({"guest":options[0]["value"]}))
+
     @dash_app.callback(#update available entities for a category
         Output('data-store', 'data'),
         Output('timestamps','figure'),
         Output('podcast-title','children'),
-        Input('speakers', 'value')
+        Input('speakers','value'),
+        State('pod-library','value'),
+        
     )
-    def update_podcast(guest_name):
-        info = list(collection.find({"guest":guest_name}))
+    def update_podcast(value, library):
+        info = list(db[library].find({"guest":value}))
+        print("info", info[0].keys())
+        print(value)
         sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
         top_confi= stamps_expanded(sent_count, word_count, stamps)
@@ -224,8 +246,6 @@ def init_callbacks(dash_app):
     def update_wordcloud(data, topic):
         build_wordcloud = lambda keywords: WordCloud(background_color="white", height=300).generate_from_frequencies(keywords).to_image()
         data = json.loads(data)
-        # print()
-        # return "test"
         if topic == -1:
             return build_wordcloud(dict(data["keywords"])), "Full Podcast Wordcloud"
         else:
