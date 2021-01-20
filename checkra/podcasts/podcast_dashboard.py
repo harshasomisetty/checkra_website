@@ -67,7 +67,7 @@ def init_dashboard(server):
                     options = [
                         {'label':col,'value':col} for col in collections
                     ],
-                    # value = collections[0],
+                    value = collections[0],
                     style={'text-align':'center', 'width':'250px'}
                 ),
                 dcc.Dropdown(
@@ -168,18 +168,38 @@ def init_dashboard(server):
 
 def init_callbacks(dash_app):
 
-    
-
     @dash_app.callback(
         Output('speakers','options'),
         Output('speakers','value'),
-        Input('pod-library','value')
+        Input('pod-library','value'),
+        Input('entry','pathname')
     )
-    def update_library(value):
-        docs = list(db[value].find({},{"guest":1}))
-        print("hi",value)
-        options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
-        return options, options[0]["value"] #, dumps(db[value].find({"guest":options[0]["value"]}))
+    def update_library(value, url):
+        print(dash.callback_context.triggered)
+        if dash.callback_context.triggered[0]["prop_id"] == "entry.pathname":
+            url = url.replace("/podcasts/","")
+            if url: #url to a specific person
+                url = url.replace("_"," ").split("/")
+                print("yes", url[0], url[1])
+                docs = list(db[url[0]].find({},{"guest":url[1]}))
+                options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
+                print("\n\n\n\n",options,"\n\n\n",url[1])
+                return options, url[1] #, dumps(db[value].find({"guest":options[0]["value"]}))
+            else: #regular entry into page
+                docs = list(db[collections[0]].find({},{"guest":speakers[0]}))
+                value = speakers[0]
+                # print("now", url)
+                options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
+                print("\n\n\n\n",options,"\n\n\n", options[0]["value"])
+                return options, options[0]["value"] #, dumps(db[value].find({"guest":options[0]["value"]}))
+                # return collections[0], dumps(info[0])
+        else: #choosing a new podcast library
+            docs = list(db[value].find({},{"guest":1}))
+
+            print("hi",value)
+            options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
+            print("\n\n\n\n",options,"\n\n\n")
+            return options, options[0]["value"] #, dumps(db[value].find({"guest":options[0]["value"]}))
 
     @dash_app.callback(#update available entities for a category
         Output('data-store', 'data'),
@@ -191,7 +211,7 @@ def init_callbacks(dash_app):
     )
     def update_podcast(value, library):
         info = list(db[library].find({"guest":value}))
-        print("info", info[0].keys())
+        print("info", value, library)
         print(value)
         sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
