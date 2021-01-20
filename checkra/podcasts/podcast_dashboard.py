@@ -21,6 +21,8 @@ import time
 matplotlib.use("agg")
 
 db = mongo.db
+collections = sorted([col for col in db.collection_names()])
+speakers = sorted([speak["guest"] for speak in db[collections[0]].find({},{"guest":1})])
 
 def init_dashboard(server):
     """Create a Plotly Dash dashboard."""
@@ -32,11 +34,14 @@ def init_dashboard(server):
         ],
     )
     #TODO add links from single podcasts to entity graphs
-    collections = sorted([col for col in db.collection_names()])
 
     dash_app.layout = html.Div([
         dcc.Store(
             id = 'data-store',
+        ),
+        dcc.Location(
+            id = 'entry',
+            refresh = False
         ),
         html.Div([
             html.H3(children=
@@ -62,7 +67,7 @@ def init_dashboard(server):
                     options = [
                         {'label':col,'value':col} for col in collections
                     ],
-                    value = collections[0],
+                    # value = collections[0],
                     style={'text-align':'center', 'width':'250px'}
                 ),
                 dcc.Dropdown(
@@ -162,6 +167,8 @@ def init_dashboard(server):
     return dash_app.server, dash_app
 
 def init_callbacks(dash_app):
+
+    
 
     @dash_app.callback(
         Output('speakers','options'),
