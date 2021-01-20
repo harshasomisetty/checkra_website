@@ -13,7 +13,6 @@ from ..extensions import mongo
 import plotly.express as px
 import os
 
-# collection = mongo.db.lex
 db = mongo.db
 collections = sorted([col for col in db.collection_names()])
 cyto.load_extra_layouts()
@@ -65,40 +64,54 @@ def init_dashboard(server):
                 ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
             ], style={'margin':'auto', 'width':'600px'}
         ),
+
+        html.P(id='cytoscape-mouseoverNodeData-output', children="test"),
         html.Hr(), 
-        html.Div(children=[ #graph display
-            html.H4(id = "cytoscape-title", style={"text-align":"center"}),
-            html.P(children="The blue node is the selected entity, red nodes are the people who mentioned the blue node", style = {'text-align':'center'}),
-            cyto.Cytoscape(
-                id='cytoscape-mentions',
-                layout={'name': 'cola', 'componentSpacing':200},
-                responsive=True,
-                style={'width': '80%', 'height': '900px', 'margin':'auto'},
-                stylesheet=[
-                    {
-                        'selector': 'node',
-                        'style': {
-                            'content': 'data(label)',
-                            'font' : '5px'
-                        }
-                    },
-                    {
-                        'selector':'.search',
-                        'style': {
-                            'background-color':'#0099cc'
-                        }
-                    },
-                    {
-                        'selector':'.result',
-                        'style': {
-                            'background-color':'#ff6666'
-                        }
-                    }
-                ]
-            )#end node graph code
-        ]),
+
         html.Div(id='cytoscape-tapNodeData-output'),
-        html.P(id='cytoscape-mouseoverNodeData-output')
+        html.Div(children=[
+        
+            html.Div(children=[ #graph display
+                html.H4(id = "cytoscape-title", style={"text-align":"center"}),
+                html.P(children="The blue node is the selected entity, red nodes are the people who mentioned the blue node", style = {'text-align':'center'}),
+                cyto.Cytoscape(
+                    id='cytoscape-mentions',
+                    layout={'name': 'cola', 'componentSpacing':200},
+                    responsive=True,
+                    style={'width': '100%', 'height': '900px'},
+                    stylesheet=[
+                        {
+                            'selector': 'node',
+                            'style': {
+                                'content': 'data(label)',
+                                'font' : '5px'
+                            }
+                        },
+                        {
+                            'selector':'.search',
+                            'style': {
+                                'background-color':'#0099cc'
+                            }
+                        },
+                        {
+                            'selector':'.result',
+                            'style': {
+                                'background-color':'#ff6666'
+                            }
+                        }
+                    ]
+                )#end node graph code
+            ], style={'width':'70%'}),
+
+            html.Div(children=[
+                html.H4(id='entity-list-title', style={'text-align':'center'}),
+                html.P(children="List of all people who mentioned the entity"),
+                dcc.Textarea(
+                    id = 'entity-list-area',
+                    style = {'width':'100%', 'height':'900px', 'text-align':'center'}
+                )
+            ], style={'width':'20%','text-align':'center'})
+        ], style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}),
         
     ])
     init_callbacks(dash_app)
@@ -115,7 +128,7 @@ def init_callbacks(dash_app):
         Input('entity_category', 'value')
     )
     def update_entities(category):
-        print(category)
+        # print(category)
         all_docs = []
         for collection in db.collection_names():
             for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
@@ -129,22 +142,25 @@ def init_callbacks(dash_app):
     @dash_app.callback( #update graph elements
         Output("cytoscape-mentions", "elements"),
         Output('cytoscape-title',"children"),
+        Output('entity-list-title','children'),
+        Output('entity-list-area','value'),
         Input('available_entities', 'value'),
         Input('entity_category', 'value'),
         Input('data-store','data')
     )
     def update_graph(value, category, data):
         data = json.loads(data)
-        print(data[0])
+        # print(data[0])
         collection = db[collections[0]]
         category = category
         elements = [{'data':{"id":value, 'label':value, 'type':'initial'}, 'classes':'search'}]
+        mentions = []
         for ind, doc in enumerate(data):
             if value in doc['traits'][category]:
                 elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
                 elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
-        
-        return elements, 'Mentions Graph of "'+str(value)+'"'
+                mentions.append(doc["guest"])
+        return elements, 'Mentions Graph of "'+str(value)+'"', 'Mentions List of "'+str(value)+'"', "\n".join(sorted(mentions))
     #TODO redo callbacks to podcast breakdowns
     
 
@@ -152,23 +168,26 @@ def init_callbacks(dash_app):
         Output('cytoscape-mouseoverNodeData-output', 'children'),
         Input('cytoscape-mentions', 'mouseoverNodeData')
     )
-    def displayTapNodeData(data):
+    def displayHoverNodeData(data):
+
+        print(data, "hover")
         try:
-            if data["type"] !="initial":
+            if data["type"] != "initial":
                 title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
                 return str(data["label"]+"-"+title)
         except:
             pass
 
-    # @dash_app.callback( #redirect to podcast breakdown
-    #     Output('cytoscape-tapNodeData-output', 'children'),
-    #     Input('cytoscape-mentions', 'tapNodeData')\
-    # )
-    # def displayTapNodeData(data):
-    #     try:
-    #         if data["type"] !="initial":
-    #             info = list(collection.find({"guest":data["label"]}))[0]
-    #             url = "/podcasts/"+info["guest"]
-    #             return dcc.Location(pathname="/podcasts/"+info["guest"], id="hello")
-    #     except:
-    #         pass
+    @dash_app.callback( #redirect to podcast breakdown
+        Output('cytoscape-tapNodeData-output', 'children'),
+        Input('cytoscape-mentions', 'tapNodeData')
+    )
+    def displayClickNodeData(data):
+        try:
+            if data["type"] !="initial":
+                print(data, "click")
+                # info = list(collection.find({"guest":data["label"]}))[0]
+                url = "/podcasts/"+data["id"].replace(" ","_")
+                return dcc.Location(pathname=url, id="hello")
+        except:
+            pass
