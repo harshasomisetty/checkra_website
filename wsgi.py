@@ -5,13 +5,23 @@ import os
 
 app, graphs_app, podcasts_app = create_app()
 
-@app.route('/graphs/', methods=["GET","POST"]) #embed dash view in flask
-def entity_graphs():
+
+#add multiple routes here so we can add multiple apps
+
+
+@app.route('/graphs/', defaults ={'name':None}) #embed dash view in flask
+@app.route("/graphs/<name>")
+def entity_graphs(name):
     footer = BeautifulSoup(graphs_app.index(),"html.parser").footer
     return render_template('graphs.html', title='Entity Graphs', footer=footer)
 
-@app.route('/podcasts/', methods=["GET","POST"]) #embed dash view in flask
-def single_podcasts():
+@app.route('/podcasts/', defaults ={'podcast':None,'name':None}) #embed dash view in flask
+@app.route('/podcasts/<podcast>/<name>') #embed dash view in flask
+def single_podcasts(podcast, name):
+    # if name:
+    #     print(name)
+    # else:
+    #     print("none")
     footer = BeautifulSoup(podcasts_app.index(),"html.parser").footer
     return render_template('podcasts.html', title='Single Podcasts', footer=footer)
 
