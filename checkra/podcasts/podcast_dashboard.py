@@ -49,41 +49,46 @@ def init_dashboard(server):
             refresh = False
         ),
         html.Div([
-            html.H3(children=
-                "Podcast Breakdowns",
-                style={'text-align':'center', 'padding-bottom':'5px'}
-            ),
-            html.P(children=
-                "Breakdown includes an overall summary of most important sentences in a text, and summaries of subsections. The entire podcast and subsections can be visualized using the Wordcloud visualizer",
-                style={'text-align':'center'}
-            ),
-            html.P(children=
-                "The breakdown also includes a list of mentioned entities in the text. Head over to Entity graphs to see if any specific entity was mentioned by anyone else",
-                style={'text-align':'center', 'padding-bottom':'5px'}
-            ),
-            html.P(children=
-                "Choose podcast on the left, and a name on the right for a podcast breakdown (repeated names indicates multiple interviews)",
-                style={'text-align':'center',}
-            ),
-            
             html.Div([
-                dcc.Dropdown(
-                    id = "pod-library",
-                    options = [
-                        {'label':col.replace("_"," "),'value':col.replace("_"," ")} for col in collections
-                    ],
-                    value = collections[0],
-                    style={'text-align':'center', 'width':'250px'}
+                html.H3(children=
+                    "Podcast Breakdowns",
+                    style={'text-align':'center', 'padding-bottom':'5px'}
                 ),
-                dcc.Dropdown(
-                    id = "speakers",
-                    # options = [
-                    #     {'label': ent, 'value': ent} for ent in speakers
-                    # ],
-                    # value=speakers[0],
-                    style={'text-align':'center', 'width':'500px'}
-                )
-            ], style={'width':'70%','margin':'auto','display':'flex', 'flex-direction':'row', 'justify-content':'space-around'}),
+                html.P(children=
+                    "Breakdown includes an overall summary of most important sentences in a text, and summaries of subsections. The entire podcast and subsections can be visualized using the Wordcloud visualizer",
+                    style={'text-align':'center'}
+                ),
+                html.P(children=
+                    "The breakdown also includes a list of mentioned entities in the text. Head over to Entity graphs to see if any specific entity was mentioned by anyone else",
+                    style={'text-align':'center', 'padding-bottom':'5px'}
+                ),
+                html.P(children=
+                    "Choose podcast on the left, and a name on the right for a podcast breakdown (repeated names indicates multiple interviews)",
+                    style={'text-align':'center',}
+                ),
+                
+                html.Div([
+                    dcc.Dropdown(
+                        id = "pod-library",
+                        options = [
+                            {'label':col.replace("_"," "),'value':col.replace("_"," ")} for col in collections
+                        ],
+                        value = collections[0],
+                        style={'text-align':'center', 'width':'450px'}
+                    ),
+                    dcc.Dropdown(
+                        id = "speakers",
+                        # options = [
+                        #     {'label': ent, 'value': ent} for ent in speakers
+                        # ],
+                        # value=speakers[0],
+                        style={'text-align':'center', 'width':'450px'}
+                    )
+                ], style={'width':'70%','margin':'auto','display':'flex', 'flex-direction':'row', 'justify-content':'space-around'}),
+            ]),
+            # html.Div(
+            #     id = "pod-library-information"
+            # )
         ]),
         html.Hr(),
         html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'10px'}),
@@ -176,15 +181,16 @@ def init_callbacks(dash_app):
     @dash_app.callback(
         Output('pod-library','value'),
         Output('from-url','children'),
+        # Output('pod-library-information'),
         Input('entry','pathname')
     )
     def from_url(url):
         url = url.replace("/podcasts/","")
         if url:
             url = url.replace("_"," ").split("/")
-            return url[0], url[1]
+            return url[0], url[1] #, db["information"].find({})
         else:
-            return collections[0], speakers[0]
+            return collections[0], speakers[0] 
     
     @dash_app.callback(
         Output('speakers','options'),
@@ -193,18 +199,15 @@ def init_callbacks(dash_app):
         Input('from-url','children')
     )
     def update_library(library, child):
-        print(dash.callback_context.triggered)
         keys = [context["prop_id"] for context in dash.callback_context.triggered]
         if "from-url.children" in keys:
             docs = list(db[library].find({},{"guest":1}))
-            options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
+            options = sorted([{'label':s["guest"],'value':s["guest"]} for s in docs], key=lambda x: x["label"])
             return options, child
         else:
             docs = list(db[library].find({},{"guest":1}))
 
-            print("hi",library)
-            options = [{'label':s["guest"],'value':s["guest"]} for s in docs]
-            print("\n\n\n\n",options,"\n\n\n")
+            options = sorted([{'label':s["guest"],'value':s["guest"]} for s in docs], key=lambda x:x['label'])
             return options, options[0]["value"] #, dumps(db[value].find({"guest":options[0]["value"]}))
 
 
@@ -218,8 +221,6 @@ def init_callbacks(dash_app):
     )
     def update_podcast(value, library):
         info = list(db[library].find({"guest":value}))
-        print("info", value, library, info)
-        print(value)
         sent_count, word_count, stamps = info[0]["sent_count"], info[0]["word_count"], info[0]["stamps"]
 
         top_confi= stamps_expanded(sent_count, word_count, stamps)
