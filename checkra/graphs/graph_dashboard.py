@@ -132,8 +132,8 @@ def init_callbacks(dash_app):
         all_docs = []
         for collection in db.collection_names():
             for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
-                all_docs.append(doc)
-        filtered = list(set([ent for doc in all_docs for ent in doc["traits"][category]]))
+                all_docs.append([doc, collection])
+        filtered = list(set([ent for doc, podcast in all_docs for ent in doc["traits"][category]]))
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
         sorted_options = sorted(options, key = lambda x:x["label"])
         return sorted_options, sorted_options[0]['value'], dumps(all_docs)
@@ -151,13 +151,12 @@ def init_callbacks(dash_app):
     def update_graph(value, category, data):
         data = json.loads(data)
         # print(data[0])
-        collection = db[collections[0]]
-        category = category
         elements = [{'data':{"id":value, 'label':value, 'type':'initial'}, 'classes':'search'}]
         mentions = []
-        for ind, doc in enumerate(data):
+        for ind, tup in enumerate(data):
+            doc, podcast = tup[0], tup[1]
             if value in doc['traits'][category]:
-                elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result'}, 'classes':'result'})
+                elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result '+podcast}, 'classes':'result'})
                 elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
                 mentions.append(doc["guest"])
         return elements, 'Mentions Graph of "'+str(value)+'"', 'Mentions List of "'+str(value)+'"', "\n".join(sorted(mentions))
@@ -187,7 +186,8 @@ def init_callbacks(dash_app):
             if data["type"] !="initial":
                 print(data, "click")
                 # info = list(collection.find({"guest":data["label"]}))[0]
-                url = "/podcasts/"+data["id"].replace(" ","_")
+                url = "/podcasts/"+ data["type"].replace("result ","")+"/"+data["id"].replace(" ","_")
+                print(url)
                 return dcc.Location(pathname=url, id="hello")
         except:
             pass

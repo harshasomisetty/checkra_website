@@ -316,7 +316,7 @@ def init_callbacks(dash_app):
                 div = html.Div([
                         html.H5(key, style={"text-align":"center", 'padding-top':'5px'}), 
                         dcc.Textarea(
-                            value = "\n".join(data["traits"][key]),
+                            value = "\n".join(sorted(data["traits"][key])),
                             disabled=True,
                             draggable=False,
                             style={'width':'100%', 'height':'250px', 'text-align':'center'}
