@@ -70,7 +70,7 @@ def init_dashboard(server):
                 dcc.Dropdown(
                     id = "pod-library",
                     options = [
-                        {'label':col,'value':col} for col in collections
+                        {'label':col.replace("_"," "),'value':col.replace("_"," ")} for col in collections
                     ],
                     value = collections[0],
                     style={'text-align':'center', 'width':'250px'}

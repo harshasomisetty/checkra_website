@@ -12,6 +12,7 @@ from flask import redirect, url_for, render_template, request, Markup, Blueprint
 from ..extensions import mongo
 import plotly.express as px
 import os
+from collections import Counter
 
 db = mongo.db
 collections = sorted([col for col in db.collection_names()])
@@ -133,10 +134,13 @@ def init_callbacks(dash_app):
         for collection in db.collection_names():
             for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
                 all_docs.append([doc, collection])
-        filtered = list(set([ent for doc, podcast in all_docs for ent in doc["traits"][category]]))
+        all_ents = ([ent for doc, podcast in all_docs for ent in doc["traits"][category] if "olumbiaast" not in ent and "Nber" not in ent and "Han" not in ent and "Kashyap" not in ent])
+        #filtered out some extra entities
+        ent_count = Counter(all_ents)
+        # print(ent_count)
+        filtered = [tup[0] for tup in ent_count.most_common(len(ent_count)-1)]
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
-        sorted_options = sorted(options, key = lambda x:x["label"])
-        return sorted_options, sorted_options[0]['value'], dumps(all_docs)
+        return options, options[0]['value'], dumps(all_docs)
 
 
     @dash_app.callback( #update graph elements
@@ -169,7 +173,7 @@ def init_callbacks(dash_app):
     )
     def displayHoverNodeData(data):
 
-        print(data, "hover")
+        # print(data, "hover")
         try:
             if data["type"] != "initial":
                 title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
@@ -184,10 +188,7 @@ def init_callbacks(dash_app):
     def displayClickNodeData(data):
         try:
             if data["type"] !="initial":
-                print(data, "click")
-                # info = list(collection.find({"guest":data["label"]}))[0]
                 url = "/podcasts/"+ data["type"].replace("result ","")+"/"+data["id"].replace(" ","_")
-                print(url)
                 return dcc.Location(pathname=url, id="hello")
         except:
             pass
