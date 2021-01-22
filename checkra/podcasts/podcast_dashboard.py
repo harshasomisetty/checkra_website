@@ -55,15 +55,15 @@ def init_dashboard(server):
                     style={'text-align':'center', 'padding-bottom':'5px'}
                 ),
                 html.P(children=
-                    "The breakdown includes summaries/visualizations of the podcast and subsections in each podcast.",
+                    "Summaries/visualizations of the podcast and subsections in each podcast in each library. Lists of mentioned entities in the text.",
                     style={'text-align':'center'}
                 ),
                 html.P(children=
-                    "The breakdown also includes a list of mentioned entities in the text. For a visualization of a specifc entity, head over to Entity graphs",
+                    "Visit Entity Graphs to find relations to a specific entitity, or choose from the options below ",
                     style={'text-align':'center'}
                 ),
                 html.P(children=
-                    "Choose from the options below (repeated guest names indicates multiple interviews)",
+                    "(Repeated guest names indicates multiple interviews).",
                     style={'text-align':'center', 'padding-bottom':'5px'}
                 ),
                 

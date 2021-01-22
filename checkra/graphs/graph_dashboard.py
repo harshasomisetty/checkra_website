@@ -166,7 +166,7 @@ def init_dashboard(server):
             html.Div(children=[
                 html.H4(id='entity-list-title', style={'text-align':'center'}),
                 html.P(children="List of people who mentioned the entity"),
-                html.P(children="Repeated names = Multiple podcasts"),
+                # html.P(children="Repeated names = Multiple podcasts"),
                 dcc.Textarea(
                     id = 'entity-list-area',
                     style = {'width':'100%', 'height':'900px', 'text-align':'center'}
@@ -206,7 +206,7 @@ def init_callbacks(dash_app):
     def update_entities(category, child):
         all_docs = []
         keys = [context["prop_id"] for context in dash.callback_context.triggered]
-        print(keys)
+        # print(keys)
         if category == "All Keywords":
             for collection in db.collection_names():
                 for doc in list(db[collection].find({},{"_id":0, "keywords":1, "guest":1})):
@@ -221,7 +221,7 @@ def init_callbacks(dash_app):
         filtered = [tup[0] for tup in ent_count.most_common(len(ent_count)-1)]
         options = [{'label': i.title(), 'value': i.title()} for i in filtered] #format options for dropdown
         if "from-url.children" in keys and child !='none':
-            print(child)
+            # print(child)
             return options, child, dumps(all_docs)
         else:
             return options, options[0]['value'], dumps(all_docs) #all_docs is a list of sublists, each sublist contains a list of entities, guest name, and podcast name
@@ -248,7 +248,7 @@ def init_callbacks(dash_app):
                 elements.append({'data':{"id":tup[1], 'label':tup[1], 'type':'result '+tup[2]}, 'classes':'result'})
                 elements.append({'data':{"source":value, 'target':tup[1], 'type':'result'}, 'classes':'result'})
                 mentions.append(tup[1])
-        return elements, 'Mentions Graph of "'+str(value)+'"', 'Mentions List of "'+str(value)+'"', "\n".join(sorted(mentions))
+        return elements, 'Mentions Graph of "'+str(value)+'"', 'Mentions List of "'+str(value)+'"', "\n".join(sorted(list(set(mentions))))
     
     @dash_app.callback(
         Output('entry','pathname'),
