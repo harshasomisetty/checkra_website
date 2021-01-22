@@ -36,10 +36,10 @@ def init_dashboard(server):
     #TODO add links from single podcasts to entity graphs
 
     dash_app.layout = html.Div([
-        dcc.Store(
+        dcc.Store( #store individual podcast data
             id = 'data-store',
         ),
-        html.Div(
+        html.Div( #store speaker
             id = 'from-url',
             children = {"url":False},
             style = {'display':'none'}
@@ -92,16 +92,12 @@ def init_dashboard(server):
                     ], style = {'display':'flex', 'flex-direction':'column'}),
                 ], style={'width':'70%','margin':'auto','display':'flex', 'flex-direction':'row', 'justify-content':'space-around', })
             ]),
-            # html.Div(
+            # html.Div( #future div for displaying information about where a podcast is from
             #     id = "pod-library-information"
             # )
         ]),
         html.Hr(),
         html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'10px'}),
-
-        # html.Div([
-        #     html.Button("Click to View HappyScribe Transcript", id="transcript-url", style={'text-align':'center', 'width':'300px'}, className="btn btn-outline-dark btn-sm")
-        # ],style={'display':'flex','justify-content':'center', 'padding-bottom':'30px'}),
         
         html.Div([
             html.Div([

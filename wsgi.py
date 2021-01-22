@@ -9,9 +9,9 @@ app, graphs_app, podcasts_app = create_app()
 #add multiple routes here so we can add multiple apps
 
 
-@app.route('/graphs/', defaults ={'name':None}) #embed dash view in flask
-@app.route("/graphs/<name>")
-def entity_graphs(name):
+@app.route('/graphs/', defaults ={'cat':None,'ent':None}) #embed dash view in flask
+@app.route("/graphs/<cat>/<ent>")
+def entity_graphs(cat, ent):
     footer = BeautifulSoup(graphs_app.index(),"html.parser").footer
     return render_template('graphs.html', title='Entity Graphs', footer=footer)
 

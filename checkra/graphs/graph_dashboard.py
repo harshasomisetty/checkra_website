@@ -35,6 +35,15 @@ def init_dashboard(server):
         dcc.Store(
             id = 'data-store',
         ),
+        dcc.Location(
+            id = 'entry',
+            refresh = False
+        ),
+        html.Div( #store speaker
+            id = 'from-url',
+            children = {"url":False},
+            style = {'display':'none'}
+        ),
         html.H3(
             children="Entity Graphs",
             style={'text-align':'center', 'padding-bottom':'10px'}
@@ -57,7 +66,7 @@ def init_dashboard(server):
                         options = [
                             {'label': ent, 'value': ent} for ent in ent_cats
                         ],
-                        value = ent_cats[0]
+                        # value = ent_cats[0] 
                     )
                 ], style={'display': 'inline-block','width':'200px'}),
                 html.Div(children=[
@@ -67,9 +76,12 @@ def init_dashboard(server):
                         style = {'text-align':'center'}
                     )
                 ], style={'display': 'inline-block','width':'400px', 'padding-left':'30px'}),
-            ], style={'margin':'auto', 'width':'600px'}
+            ], 
+            style={'margin':'auto', 'width':'600px', 'padding-below':'30px'}
         ),
-
+        html.Div([
+            html.Button("Bitcoin Demo", id="bitcoin-demo", style={'text-align':'center'}, className="btn btn-outline-dark btn")
+        ], style={'margin':'auto','display':'flex', 'justify-content':'center',}),
         # html.P(id='cytoscape-mouseoverNodeData-output', children="test"),
 
         html.Hr(), 
@@ -120,6 +132,7 @@ def init_dashboard(server):
             html.Div(children=[
                 html.H4(id='entity-list-title', style={'text-align':'center'}),
                 html.P(children="List of all people who mentioned the entity"),
+                html.P(children="Repeated names = Multiple podcasts"),
                 dcc.Textarea(
                     id = 'entity-list-area',
                     style = {'width':'100%', 'height':'900px', 'text-align':'center'}
@@ -134,21 +147,35 @@ def init_dashboard(server):
 
  
 def init_callbacks(dash_app):
+    @dash_app.callback(
+        Output('entity_category','value'),
+        Output('from-url','children'),
+        Input('entry','pathname')
+    )
+    def from_url(url):
+        url = url.replace("/graphs/","")
+        if url:
+            url = url.replace("_"," ").split("/")
+            return url[0].title(), url[1].title() #, db["information"].find({})
+        else:
+            return collections[0], speakers[0] 
 
     @dash_app.callback(#update available entities for a category
+        
         Output('available_entities', 'options'),
         Output('available_entities', 'value'),
         Output('data-store', 'data'),
-        Input('entity_category', 'value')
+        Input('entity_category', 'value'),
+        Input('from-url','children')
     )
-    def update_entities(category):
+    def update_entities(category, child):
         all_docs = []
-
+        keys = [context["prop_id"] for context in dash.callback_context.triggered]
+        print(keys)
         if category == "All Keywords":
             for collection in db.collection_names():
                 for doc in list(db[collection].find({},{"_id":0, "keywords":1, "guest":1})):
                     all_docs.append([np.array(doc["keywords"])[:,0][:20], doc["guest"], str(collection)])
-
         else:
             for collection in db.collection_names():
                 for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
@@ -158,7 +185,10 @@ def init_callbacks(dash_app):
         ent_count = Counter(all_ents)
         filtered = [tup[0] for tup in ent_count.most_common(len(ent_count)-1)]
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
-        return options, options[0]['value'], dumps(all_docs) #all_docs is a list of sublists, each sublist contains a list of entities, guest name, and podcast name
+        if "from-url.children" in keys:
+            return options, child, dumps(all_docs)
+        else:
+            return options, options[0]['value'], dumps(all_docs) #all_docs is a list of sublists, each sublist contains a list of entities, guest name, and podcast name
 
 
     @dash_app.callback( #update graph elements
@@ -183,7 +213,12 @@ def init_callbacks(dash_app):
                 mentions.append(tup[1])
         return elements, 'Mentions Graph of "'+str(value)+'"', 'Mentions List of "'+str(value)+'"', "\n".join(sorted(mentions))
     
-
+    @dash_app.callback(
+        Output('entry','pathname'),
+        Input('bitcoin-demo','n_clicks')
+    )
+    def bitcoin_demo(click):
+        return "/graphs/all_keywords/bitcoin"
     # @dash_app.callback( #display side title
     #     # Output('cytoscape-mouseoverNodeData-output', 'children'),
     #     Output('')
