@@ -55,36 +55,42 @@ def init_dashboard(server):
                     style={'text-align':'center', 'padding-bottom':'5px'}
                 ),
                 html.P(children=
-                    "Breakdown includes an overall summary of most important sentences in a text, and summaries of subsections. The entire podcast and subsections can be visualized using the Wordcloud visualizer",
+                    "The breakdown includes summaries/visualizations of the podcast and subsections in each podcast.",
                     style={'text-align':'center'}
                 ),
                 html.P(children=
-                    "The breakdown also includes a list of mentioned entities in the text. Head over to Entity graphs to see if any specific entity was mentioned by anyone else",
-                    style={'text-align':'center', 'padding-bottom':'5px'}
+                    "The breakdown also includes a list of mentioned entities in the text. For a visualization of a specifc entity, head over to Entity graphs",
+                    style={'text-align':'center'}
                 ),
                 html.P(children=
-                    "Choose podcast on the left, and a name on the right for a podcast breakdown (repeated names indicates multiple interviews)",
-                    style={'text-align':'center',}
+                    "Choose from the options below (repeated guest names indicates multiple interviews)",
+                    style={'text-align':'center', 'padding-bottom':'5px'}
                 ),
                 
                 html.Div([
-                    dcc.Dropdown(
-                        id = "pod-library",
-                        options = [
-                            {'label':col.replace("_"," "),'value':col.replace("_"," ")} for col in collections
-                        ],
-                        value = collections[0],
-                        style={'text-align':'center', 'width':'450px'}
-                    ),
-                    dcc.Dropdown(
-                        id = "speakers",
-                        # options = [
-                        #     {'label': ent, 'value': ent} for ent in speakers
-                        # ],
-                        # value=speakers[0],
-                        style={'text-align':'center', 'width':'450px'}
-                    )
-                ], style={'width':'70%','margin':'auto','display':'flex', 'flex-direction':'row', 'justify-content':'space-around'}),
+                    html.Div([
+                        html.H5(children = "Podcast Libraries", style = {"text-align" : 'center'}),
+                        dcc.Dropdown(
+                            id = "pod-library",
+                            options = [
+                                {'label':col.replace("_"," "),'value':col.replace("_"," ")} for col in collections
+                            ],
+                            value = collections[0],
+                            style={'text-align':'center', 'width':'400px'}
+                        ),
+                    ], style = {'display':'flex', 'flex-direction':'column'}),
+                    html.Div([
+                        html.H5(children = "Podcast Guests", style = {"text-align" : 'center'}),
+                        dcc.Dropdown(
+                            id = "speakers",
+                            # options = [
+                            #     {'label': ent, 'value': ent} for ent in speakers
+                            # ],
+                            # value=speakers[0],
+                            style={'text-align':'center', 'width':'400px'}
+                        )
+                    ], style = {'display':'flex', 'flex-direction':'column'}),
+                ], style={'width':'70%','margin':'auto','display':'flex', 'flex-direction':'row', 'justify-content':'space-around', })
             ]),
             # html.Div(
             #     id = "pod-library-information"
@@ -125,7 +131,7 @@ def init_dashboard(server):
                 html.Div([
                     html.Div([
                         html.H5(children="Topic Breakdown", style={"text-align":"center"}),
-                        html.P(children="Click a Colored Sub-Section for a Mini-Summary",style={"text-align":"center"})
+                        html.P(children="Click a Colored Sub-Section for a Mini-Summary, \nDrag to zoom in, double click to zoom out",style={"text-align":"center"})
                     ]),
                     html.Div([
                         html.Button("Or Reset to Full Podcast Summary", id="reset-summary", style={'text-align':'center'}, className="btn btn-outline-dark btn-sm")
@@ -142,7 +148,7 @@ def init_dashboard(server):
                     
                 ],style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
  
-            ],style={'width':"400px"}),
+            ],style={'width':"500px"}),
             
             html.Div([
                 html.Div([
@@ -312,12 +318,13 @@ def init_callbacks(dash_app):
     def update_entity_views(data):
         data = json.loads(data)
         children = []
+        print(sorted(data["traits"]["Companies"]))
         for key in sorted(data["traits"].keys()):
             if len(data["traits"][key])>0 and key!="Topics" and "All" not in key: 
                 div = html.Div([
                         html.H5(key, style={"text-align":"center", 'padding-top':'5px'}), 
                         dcc.Textarea(
-                            value = "\n".join(sorted(data["traits"][key])),
+                            value = "\n".join(sorted(list(set(data["traits"][key])))),
                             disabled=True,
                             draggable=False,
                             style={'width':'100%', 'height':'250px', 'text-align':'center'}

@@ -134,7 +134,7 @@ def init_callbacks(dash_app):
         for collection in db.collection_names():
             for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
                 all_docs.append([doc, collection])
-        all_ents = ([ent for doc, podcast in all_docs for ent in doc["traits"][category] if "olumbiaast" not in ent and "Nber" not in ent and "Han" not in ent and "Kashyap" not in ent])
+        all_ents = ([ent for doc, podcast in all_docs for ent in doc["traits"][category] ])
         #filtered out some extra entities
         ent_count = Counter(all_ents)
         # print(ent_count)
@@ -188,7 +188,7 @@ def init_callbacks(dash_app):
     def displayClickNodeData(data):
         try:
             if data["type"] !="initial":
-                url = "/podcasts/"+ data["type"].replace("result ","")+"/"+data["id"].replace(" ","_")
+                url = "/podcasts/"+ data["type"].replace("result ","").replace(" ", "_")+"/"+data["id"].replace(" ","_")
                 return dcc.Location(pathname=url, id="hello")
         except:
             pass
