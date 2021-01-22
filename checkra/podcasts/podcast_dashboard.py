@@ -118,15 +118,20 @@ def init_dashboard(server):
                         marks={str(number+1): str(number+1) for number in np.arange(10)},
                         step=None
                     ),
-                    
-                    html.P(
-                        id = "summary-result",
-                        style={'text-align':'center'}
+                    dcc.Loading(
+                        id = "summary-loading",
+                        type = 'circle',
+                        children = [
+                            html.P(
+                                id = "summary-result",
+                                style={'text-align':'center'}
+                            ),
+                        ]
                     ),
-
                     html.Div(id = 'summary-id', style={'display':'none'})
                 ])
             ], style={'width':'400px'}),
+            
             html.Div([
                 html.Div([
                     html.Div([
@@ -138,11 +143,16 @@ def init_dashboard(server):
                     ], style={'margin':'auto','display':'flex', 'justify-content':'space-evenly', 'padding-bottom':'5px'}),
                     html.P(id="subtopic-hover",style={'text-align':'center'}),
                     html.Div([
-                        dcc.Graph(
-                            id = "timestamps", 
-                            clear_on_unhover = True,
-                            config=dict(displayModeBar=False, autosizeable = False), #disable mode bar
-
+                        dcc.Loading(
+                            id = 'timestamps-loading',
+                            type = 'circle',
+                            children = [
+                                dcc.Graph(
+                                    id = "timestamps", 
+                                    clear_on_unhover = True,
+                                    config=dict(displayModeBar=False, autosizeable = False), #disable mode bar
+                                )
+                            ]
                         )
                     ], style={'width':"100%", 'margin':'auto'}),
                     
@@ -174,6 +184,7 @@ def init_dashboard(server):
 
         html.Hr(),
         html.H4("Mentioned Entities", style={'text-align':'center'}),
+        html.P("Entities mentioned in podcast, (some may be misplaced)", style={'text-align':'center'}),
         html.Div(
             id = "entities",
             style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}
@@ -318,7 +329,6 @@ def init_callbacks(dash_app):
     def update_entity_views(data):
         data = json.loads(data)
         children = []
-        print(sorted(data["traits"]["Companies"]))
         for key in sorted(data["traits"].keys()):
             if len(data["traits"][key])>0 and key!="Topics" and "All" not in key: 
                 div = html.Div([

@@ -40,7 +40,7 @@ def init_dashboard(server):
             style={'text-align':'center', 'padding-bottom':'10px'}
         ),
         html.P(
-            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. The defaul 'All Entities' category displays a graph of all the entities mentioned in all podcasts",
+            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. The default 'All Entities' category displays a graph of all the entities mentioned in all podcasts",
             style={'text-align':'center'}
         ),
         html.P(
@@ -76,10 +76,11 @@ def init_dashboard(server):
 
         html.Div(id='cytoscape-tapNodeData-output'),
         html.Div(children=[
-        
             html.Div(children=[ #graph display
                 html.H4(id = "cytoscape-title", style={"text-align":"center"}),
-                html.P(children="The blue circle is the selected entity, red circles are the people who mentioned the blue node. \nYou can zoom in and out for details, drag people around, and click a person to go to their podcast breakdown", style = {'text-align':'center'}),
+                html.P(children="The blue circle is the selected entity, red circles are the people who mentioned the blue node. ", style = {'text-align':'center'}),
+                
+                html.P(children="Zoom in and out for details, drag people circles around, and click a person to go to their podcast breakdown", style = {'text-align':'center'}),
                 dcc.Loading(
                     id = "graph-loading",
                     type = 'graph',
@@ -153,7 +154,7 @@ def init_callbacks(dash_app):
                 for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
                     all_docs.append([list(doc["traits"][category]), doc["guest"], str(collection)])
 
-        all_ents = ([ent for doc in all_docs for ent in doc[0]])
+        all_ents = ([ent for doc in all_docs for ent in doc[0] if ent!="Kashyap"])
         ent_count = Counter(all_ents)
         filtered = [tup[0] for tup in ent_count.most_common(len(ent_count)-1)]
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
