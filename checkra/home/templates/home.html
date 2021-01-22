@@ -1,27 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Home Page{% endblock %}
 
 
 
 {%block content%}
 
 <h3 style="text-align: center; padding-top:20px;padding-bottom:20px;">Checkra</h3>
-<h4 style="text-align: center; padding-bottom:20px;">Choose an Option to Gain Insights on Podcasts</h4>
+<h4 style="text-align: center; padding-bottom:20px;">Choose an Option to Explore Podcasts</h4>
 
-<div class="d-sm-flex justify-content-sm-around">
-    <a class="btn btn-dark btn-lg" href="/podcasts" role="button">Podcast Breakdowns</a>
-    <a class="btn btn-dark btn-lg" href="/graphs" role="button">Entity Graphs</a>
+<div class="d-flex justify-content-center">
+    <div class="align-self-center" style ="padding:40px">
+        <a class="btn btn-dark btn-lg" href="/podcasts" role="button">Podcast Breakdowns</a>
+    </div>
+    <div>
+        <a href = '/about'>
+            <img src="{{url_for('static', filename='Checkra_black.png')}}" style="height:100%;width: auto; padding-right:10px" title="Checkra Logo, click for more info">
+        </a>
+    </div>
+    <div class="align-self-center" style ="padding:20px">
+        <a class="btn btn-dark btn-lg" href="/graphs" role="button">Entity Graphs</a>
+    </div>
     <!-- <a class="btn btn-dark btn-lg" href="/news" role="button">News</a> -->
+</div>
+<div style="margin:auto">
+
+    
 </div>
 <br><br>
 <div style="text-align: center">
     <h5>What is Checkra?</h6>
-    <p>Checkra is an information aggregator and extractor that currently works on podcasts, and will scale to many more information sources including financial data, books, and research papers. <br>It'll cross-reference this data to mainstream news and social media, and with ML-classifiers, Checkra will be able to detect misinformation at its inception.</p>
+    <p>Checkra is an information aggregator and extractor that currently gathers information from podcasts, and will scale to many more information sources including books, blogs and research papers. <br>It'll cross-reference this data to mainstream news and social media, and with ML-classifiers, Checkra will be able to detect misinformation at its inception.<br>There will be a finance component to monitor rising stocks and markets, and automatically provide due diligence from information sources. <br>Currently using podcast transcripts from HappyScribe, so huge shoutout to them.</p>
     <br>
     <h5>Current Features</h6>
     <ul>
-        <li>Explore pre-processed podcasts from Lex Fridman, available at "Podcast Breakdowns"</li>
-        <li>Visualize which speakers mentioned specific entities, availabe at "Entity Graphs"</li>
+        <li>Explore pre-processed podcasts from "Lex Fridman" and "The Investor Podcast", available at the "Podcast Breakdowns" tab</li>
+        <li>Visualize which speakers mentioned specific entities, availabe at the "Entity Graphs" tab</li>
     </ul>
     <br>
     <h5>Future Updates</h6>
@@ -31,6 +43,7 @@
         <li>Allow users to process their own text</li>
         <li>Monitor mentions of companies and stocks</li>
         <li>Detect social media misinformation trends</li>
+        <li>Speed up</li>
     </ul>
     </div>
 

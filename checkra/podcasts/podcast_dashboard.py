@@ -214,7 +214,7 @@ def init_callbacks(dash_app):
             docs = list(db[library].find({},{"guest":1}))
 
             options = sorted([{'label':s["guest"],'value':s["guest"]} for s in docs], key=lambda x:x['label'])
-            return options, options[0]["value"] #, dumps(db[value].find({"guest":options[0]["value"]}))
+            return options, options[0]["value"]
 
 
     @dash_app.callback(#update available entities for a category

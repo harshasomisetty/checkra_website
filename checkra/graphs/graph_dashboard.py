@@ -30,23 +30,27 @@ def init_dashboard(server):
 
     #TODO make graph nodes smaller, make edges further away
     
-    ent_cats = sorted(list(db[collections[0]].find_one({},{"traits":1, "_id":0})["traits"].keys()))#get all categories stored in mongo
+    ent_cats = sorted(list(db[collections[0]].find_one({},{"traits":1, "_id":0})["traits"].keys())+["All Keywords"])#get all categories stored in mongo
     dash_app.layout = html.Div([
         dcc.Store(
             id = 'data-store',
         ),
         html.H3(
             children="Entity Graphs",
-            style={'text-align':'center', 'padding-bottom':'20px'}
+            style={'text-align':'center', 'padding-bottom':'10px'}
         ),
         html.P(
-            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. Popular Entities are 'Bitcoin' or the 'Bible'",
-            style={'text-align':'center', 'padding-bottom':'20px'}
+            children="Choose an Entity Category and an available entity to see mentions by Podcast Guests. The defaul 'All Entities' category displays a graph of all the entities mentioned in all podcasts",
+            style={'text-align':'center'}
+        ),
+        html.P(
+            children="The 'All Topics' category lists frequent keywords. Some keywords are noise, but others words like 'Bitcoin' give better specific results where Bitcoin is a major topic in a podcast",
+            style={'text-align':'center'}
         ),
         html.Div(
             children=[ #options
                 html.Div(children=[
-                    html.P(children = "Entity Category", style = {'text-align':'center'}),
+                    html.H6(children = "Entity Category", style = {'text-align':'center', 'padding-above':'9px'}),
                     dcc.Dropdown(
                         id = "entity_category",
                         style = {'text-align':'center'},
@@ -57,7 +61,7 @@ def init_dashboard(server):
                     )
                 ], style={'display': 'inline-block','width':'200px'}),
                 html.Div(children=[
-                    html.P(children = "Available Entities", style = {'text-align':'center'}),
+                    html.H6(children = "Mentioned Entities", style = {'text-align':'center'}),
                     dcc.Dropdown(
                         id = "available_entities",
                         style = {'text-align':'center'}
@@ -66,7 +70,8 @@ def init_dashboard(server):
             ], style={'margin':'auto', 'width':'600px'}
         ),
 
-        html.P(id='cytoscape-mouseoverNodeData-output', children="test"),
+        # html.P(id='cytoscape-mouseoverNodeData-output', children="test"),
+
         html.Hr(), 
 
         html.Div(id='cytoscape-tapNodeData-output'),
@@ -74,34 +79,41 @@ def init_dashboard(server):
         
             html.Div(children=[ #graph display
                 html.H4(id = "cytoscape-title", style={"text-align":"center"}),
-                html.P(children="The blue node is the selected entity, red nodes are the people who mentioned the blue node", style = {'text-align':'center'}),
-                cyto.Cytoscape(
-                    id='cytoscape-mentions',
-                    layout={'name': 'cola', 'componentSpacing':200},
-                    responsive=True,
-                    style={'width': '100%', 'height': '900px'},
-                    stylesheet=[
-                        {
-                            'selector': 'node',
-                            'style': {
-                                'content': 'data(label)',
-                                'font' : '5px'
-                            }
-                        },
-                        {
-                            'selector':'.search',
-                            'style': {
-                                'background-color':'#0099cc'
-                            }
-                        },
-                        {
-                            'selector':'.result',
-                            'style': {
-                                'background-color':'#ff6666'
-                            }
-                        }
+                html.P(children="The blue circle is the selected entity, red circles are the people who mentioned the blue node. \nYou can zoom in and out for details, drag people around, and click a person to go to their podcast breakdown", style = {'text-align':'center'}),
+                dcc.Loading(
+                    id = "graph-loading",
+                    type = 'graph',
+                    children = [
+                        cyto.Cytoscape(
+                            id='cytoscape-mentions',
+                            layout={'name': 'cola', 'componentSpacing':200},
+                            responsive=True,
+                            style={'width': '100%', 'height': '900px'},
+                            stylesheet=[
+                                {
+                                    'selector': 'node',
+                                    'style': {
+                                        'content': 'data(label)',
+                                        'font' : '5px'
+                                    }
+                                },
+                                
+                                {
+                                    'selector':'.search',
+                                    'style': {
+                                        'background-color':'#0099cc'
+                                    }
+                                },
+                                {
+                                    'selector':'.result',
+                                    'style': {
+                                        'background-color':'#ff6666'
+                                    }
+                                }
+                            ]
+                        )#end node graph code
                     ]
-                )#end node graph code
+                ),
             ], style={'width':'70%'}),
 
             html.Div(children=[
@@ -129,18 +141,23 @@ def init_callbacks(dash_app):
         Input('entity_category', 'value')
     )
     def update_entities(category):
-        # print(category)
         all_docs = []
-        for collection in db.collection_names():
-            for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
-                all_docs.append([doc, collection])
-        all_ents = ([ent for doc, podcast in all_docs for ent in doc["traits"][category] ])
-        #filtered out some extra entities
+
+        if category == "All Keywords":
+            for collection in db.collection_names():
+                for doc in list(db[collection].find({},{"_id":0, "keywords":1, "guest":1})):
+                    all_docs.append([np.array(doc["keywords"])[:,0][:20], doc["guest"], str(collection)])
+
+        else:
+            for collection in db.collection_names():
+                for doc in list(db[collection].find({},{"_id":0, "traits."+category:1, "guest":1})):
+                    all_docs.append([list(doc["traits"][category]), doc["guest"], str(collection)])
+
+        all_ents = ([ent for doc in all_docs for ent in doc[0]])
         ent_count = Counter(all_ents)
-        # print(ent_count)
         filtered = [tup[0] for tup in ent_count.most_common(len(ent_count)-1)]
         options = [{'label': i, 'value': i} for i in filtered] #format options for dropdown
-        return options, options[0]['value'], dumps(all_docs)
+        return options, options[0]['value'], dumps(all_docs) #all_docs is a list of sublists, each sublist contains a list of entities, guest name, and podcast name
 
 
     @dash_app.callback( #update graph elements
@@ -154,32 +171,32 @@ def init_callbacks(dash_app):
     )
     def update_graph(value, category, data):
         data = json.loads(data)
-        # print(data[0])
         elements = [{'data':{"id":value, 'label':value, 'type':'initial'}, 'classes':'search'}]
+            
         mentions = []
-        for ind, tup in enumerate(data):
-            doc, podcast = tup[0], tup[1]
-            if value in doc['traits'][category]:
-                elements.append({'data':{"id":doc["guest"], 'label':doc["guest"], 'type':'result '+podcast}, 'classes':'result'})
-                elements.append({'data':{"source":value, 'target':doc["guest"], 'type':'result'}, 'classes':'result'})
-                mentions.append(doc["guest"])
+
+        for tup in data:
+            if value in tup[0]:
+                elements.append({'data':{"id":tup[1], 'label':tup[1], 'type':'result '+tup[2]}, 'classes':'result'})
+                elements.append({'data':{"source":value, 'target':tup[1], 'type':'result'}, 'classes':'result'})
+                mentions.append(tup[1])
         return elements, 'Mentions Graph of "'+str(value)+'"', 'Mentions List of "'+str(value)+'"', "\n".join(sorted(mentions))
-    #TODO redo callbacks to podcast breakdowns
     
 
-    @dash_app.callback( #display side title
-        Output('cytoscape-mouseoverNodeData-output', 'children'),
-        Input('cytoscape-mentions', 'mouseoverNodeData')
-    )
-    def displayHoverNodeData(data):
+    # @dash_app.callback( #display side title
+    #     # Output('cytoscape-mouseoverNodeData-output', 'children'),
+    #     Output('')
+    #     Input('cytoscape-mentions', 'mouseoverNodeData')
+    # )
+    # def displayHoverNodeData(data):
 
-        # print(data, "hover")
-        try:
-            if data["type"] != "initial":
-                title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
-                return str(data["label"]+"-"+title)
-        except:
-            pass
+    #     # print(data, "hover")
+    #     try:
+    #         if data["type"] != "initial":
+    #             title = collection.find_one({"guest":data["id"]},{"_id":0,"title":1})["title"]
+    #             return str(data["label"]+"-"+title)
+    #     except:
+    #         pass
 
     @dash_app.callback( #redirect to podcast breakdown
         Output('cytoscape-tapNodeData-output', 'children'),
