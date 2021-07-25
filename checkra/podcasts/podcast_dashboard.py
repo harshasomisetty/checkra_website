@@ -66,7 +66,7 @@ def init_dashboard(server):
                     "(Repeated guest names indicates multiple interviews).",
                     style={'text-align':'center', 'padding-bottom':'5px'}
                 ),
-                
+
                 html.Div([
                     html.Div([
                         html.H5(children = "Podcast Libraries", style = {"text-align" : 'center'}),
@@ -98,7 +98,7 @@ def init_dashboard(server):
         ]),
         html.Hr(),
         html.H4(id='podcast-title', style={'text-align':'center','padding-bottom':'10px'}),
-        
+
         html.Div([
             html.Div([
                 html.Div([
@@ -127,11 +127,11 @@ def init_dashboard(server):
                     html.Div(id = 'summary-id', style={'display':'none'})
                 ])
             ], style={'width':'400px'}),
-            
+
             html.Div([
                 html.Div([
                     html.Div([
-                        html.H5(children="Topic Breakdown", style={"text-align":"center"}),
+                        html.H5(children="Timestamp Breakdown", style={"text-align":"center"}),
                         html.P(children="Click a Colored Sub-Section for a Mini-Summary, \nDrag to zoom in, double click to zoom out",style={"text-align":"center"})
                     ]),
                     html.Div([
@@ -144,18 +144,18 @@ def init_dashboard(server):
                             type = 'circle',
                             children = [
                                 dcc.Graph(
-                                    id = "timestamps", 
+                                    id = "timestamps",
                                     clear_on_unhover = True,
                                     config=dict(displayModeBar=False, autosizeable = False), #disable mode bar
                                 )
                             ]
                         )
                     ], style={'width':"100%", 'margin':'auto'}),
-                    
+
                 ],style={'width':"100%", 'display':'flex', 'flex-direction':'column'})
- 
+
             ],style={'width':"500px"}),
-            
+
             html.Div([
                 html.Div([
                     html.Div([
@@ -184,7 +184,7 @@ def init_dashboard(server):
         html.Div(
             id = "entities",
             style={'display':'flex', 'flex-wrap':'wrap', 'justify-content':'space-around'}
-        ) 
+        )
     ])
     init_callbacks(dash_app)
     return dash_app.server, dash_app
@@ -203,8 +203,8 @@ def init_callbacks(dash_app):
             url = url.replace("_"," ").split("/")
             return url[0], url[1] #, db["information"].find({})
         else:
-            return collections[0], speakers[0] 
-    
+            return collections[0], speakers[0]
+
     @dash_app.callback(
         Output('speakers','options'),
         Output('speakers','value'),
@@ -230,7 +230,7 @@ def init_callbacks(dash_app):
         Output('podcast-title','children'),
         Input('speakers','value'),
         State('pod-library','value'),
-        
+
     )
     def update_podcast(value, library):
         info = list(db[library].find({"guest":value}))
@@ -246,18 +246,18 @@ def init_callbacks(dash_app):
         )
         for ind, topic in enumerate(top_confi):
             fig.add_trace(go.Scatter(x=np.arange(sent_count), y=topic, fill='tozeroy', hoverinfo='none', hovertemplate= None))
-        
+
         fig.update_xaxes(visible=False)
         fig.update_yaxes(visible=False, fixedrange=True, range=[.1,1])
         fig.update_layout(
-            annotations=[], 
-            overwrite=True, 
-            showlegend=False, 
-            plot_bgcolor="white", 
+            annotations=[],
+            overwrite=True,
+            showlegend=False,
+            plot_bgcolor="white",
             margin=dict(t=0, l=20, r=20, b=20),
             hovermode="x"
         )
-        
+
         return dumps(info[0]), fig, str(info[0]["guest"]+" and "+ info[0]["host"]+": "+info[0]["title"])
 
     @dash_app.callback( #Change loaded summary and wordcloud when clicking on reset button or subtopics
@@ -326,9 +326,9 @@ def init_callbacks(dash_app):
         data = json.loads(data)
         children = []
         for key in sorted(data["traits"].keys()):
-            if len(data["traits"][key])>0 and key!="Topics" and "All" not in key: 
+            if len(data["traits"][key])>0 and key!="Topics" and "All" not in key:
                 div = html.Div([
-                        html.H5(key, style={"text-align":"center", 'padding-top':'5px'}), 
+                        html.H5(key, style={"text-align":"center", 'padding-top':'5px'}),
                         dcc.Textarea(
                             value = "\n".join(sorted(list(set(data["traits"][key])))),
                             disabled=True,
@@ -347,11 +347,11 @@ def stamps_expanded(sent_count, word_count, stamps): #expand initial stamps into
     i = 0
     while i<len(stamps)-1:#set section of of final topics equal to corressponding timestamp
         arr = np.zeros(sent_count)
-        arr[stamps[i]:stamps[i+1]] = i+1 
+        arr[stamps[i]:stamps[i+1]] = i+1
         top_confi.append(arr)
         i+=1
     arr = np.zeros(sent_count)
     arr[stamps[-1]:] = i+1
     top_confi.append(arr)
-    
+
     return top_confi
