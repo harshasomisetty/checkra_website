@@ -206,7 +206,6 @@ def init_callbacks(dash_app):
     def update_entities(category, child):
         all_docs = []
         keys = [context["prop_id"] for context in dash.callback_context.triggered]
-        # print(keys)
         if category == "All Keywords":
             for collection in db.collection_names():
                 for doc in list(db[collection].find({},{"_id":0, "keywords":1, "guest":1})):
@@ -221,7 +220,6 @@ def init_callbacks(dash_app):
         filtered = [tup[0] for tup in ent_count.most_common(len(ent_count)-1)]
         options = [{'label': i.title(), 'value': i.title()} for i in filtered] #format options for dropdown
         if "from-url.children" in keys and child !='none':
-            # print(child)
             return options, child, dumps(all_docs)
         else:
             return options, options[0]['value'], dumps(all_docs) #all_docs is a list of sublists, each sublist contains a list of entities, guest name, and podcast name

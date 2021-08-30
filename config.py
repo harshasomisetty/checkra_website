@@ -1,15 +1,13 @@
 import urllib.parse
-from constants import username, password
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class Config(object):
     DEBUG = False
     TESTING = False
 
 class ProductionConfig(Config):
-    MONGO_URI = "mongodb+srv://"+username+":"+urllib.parse.quote(password)+"@cluster0.4pec2.mongodb.net/production?retryWrites=true&w=majority"
-    DEBUG = True # Turns on debugging features in Flask
+    MONGO_URI = "mongodb+srv://"+os.getenv("USERNAME")+":"+urllib.parse.quote(str(os.getenv("PASSWORD")))+"@cluster0.4pec2.mongodb.net/development?retryWrites=true&w=majority"
 
-class DevelopmentConfig(Config):
-    FLASK_ENV="development"
-    DEBUG = True # Turns on debugging features in Flask
-    MONGO_URI = "mongodb+srv://"+username+":"+urllib.parse.quote(password)+"@cluster0.4pec2.mongodb.net/development?retryWrites=true&w=majority"
