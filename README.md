@@ -14,3 +14,7 @@ The technical development was straight forward:
   - Wordcloud: Generated PNG using matplotlib of highest frequency terms in the section of the podcast
 - [Graphs Page](https://checkra.co/graphs)
   - Still a lot of work to do here, but can choose a specific keyword, and a list of closely related podcasts are returned
+
+# setup
+
+make a .env file, with USERNAME=Empyr3an, PASSWORD=password7(obviously wrong lol)
